@@ -80,6 +80,10 @@
   .ils-v .band{left:6px;right:6px}
   .ils-h .band{top:6px;bottom:6px}
 
+  /* 提示时整块闪烁，把注意力引到两个指针上 */
+  .ils.flash{animation:ilsflash .55s ease-in-out 8}
+  @keyframes ilsflash{0%,100%{opacity:1}50%{opacity:.22}}
+
   /* ILS 指针：洋红菱形，同真机 PFD */
   .ptr{position:absolute;left:50%;top:50%;width:16px;height:16px;margin:-8px 0 0 -8px;
     filter:drop-shadow(0 0 4px rgba(255,62,165,.95)) drop-shadow(0 0 13px rgba(255,62,165,.5))}
@@ -669,7 +673,7 @@ const TUT_STEPS = [
     body:'把雪橇对准飞来的礼物盒和气球，<b>直接撞过去</b>。每撞到一个都有优惠券，累计最高 $600。' },
   { h:1600, tag:'5 / 6', title:'自由练习',
     body:'继续收集礼物。同时留意右侧 <b>G/S</b> 和下方 <b>LOC</b> 两个洋红菱形指针，别让它们偏太远。' },
-  { h:900,  tag:'6 / 6', title:'判定标准',
+  { h:1000, tag:'6 / 6', title:'判定标准', flash:true,
     body:'<b>500 尺内</b>保持 <b>GS 和 LOC</b> 在 <b>1 个点</b>之内，否则不稳定进近。' },
   { h:500,  tag:'判定',  title:'稳定进近开始 · 500 FT',
     body:'对准跑道上那组<b>白色大块</b>，稳稳落下去。' },
@@ -684,6 +688,11 @@ function showTutor(item){
   el('tTitle').textContent = item.title;
   el('tBody').innerHTML = item.body;
   box.classList.add('on');
+}
+function flashILS(ms){
+  const nodes = document.querySelectorAll('.ils');
+  nodes.forEach(n => n.classList.add('flash'));
+  setTimeout(() => nodes.forEach(n => n.classList.remove('flash')), ms || 4400);
 }
 function hideTutor(){
   const box = el('tutor');
@@ -949,7 +958,9 @@ function update(dt){
 
   if (st.mode === 'play'){
     if (st.tutorial && st.tutIdx < TUT_STEPS.length && st.h <= TUT_STEPS[st.tutIdx].h){
-      showTutor(TUT_STEPS[st.tutIdx]);
+      const step = TUT_STEPS[st.tutIdx];
+      showTutor(step);
+      if (step.flash) flashILS(4400);
       st.tutIdx++;
     }
 
