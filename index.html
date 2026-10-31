@@ -81,7 +81,7 @@
   .ils-h .band{top:6px;bottom:6px}
 
   /* 提示时整块闪烁，把注意力引到两个指针上 */
-  .ils.flash{animation:ilsflash .55s ease-in-out 8}
+  .ils.flash{animation:ilsflash .55s ease-in-out infinite}
   @keyframes ilsflash{0%,100%{opacity:1}50%{opacity:.22}}
 
   /* ILS 指针：洋红菱形，同真机 PFD */
@@ -675,7 +675,7 @@ const TUT_STEPS = [
     body:'继续收集礼物。同时留意右侧 <b>G/S</b> 和下方 <b>LOC</b> 两个洋红菱形指针，别让它们偏太远。' },
   { h:1000, tag:'6 / 6', title:'判定标准', flash:true,
     body:'<b>500 尺内</b>保持 <b>GS 和 LOC</b> 在 <b>1 个点</b>之内，否则不稳定进近。' },
-  { h:500,  tag:'判定',  title:'稳定进近开始 · 500 FT',
+  { h:500,  tag:'判定',  title:'稳定进近开始 · 500 FT', flash:false,
     body:'对准跑道上那组<b>白色大块</b>，稳稳落下去。' },
   { h:130,  tag:'落地',  title:'通过判定',
     body:'对准跑道道面，稳稳落下去。落在跑道外会算失败。' }
@@ -689,10 +689,8 @@ function showTutor(item){
   el('tBody').innerHTML = item.body;
   box.classList.add('on');
 }
-function flashILS(ms){
-  const nodes = document.querySelectorAll('.ils');
-  nodes.forEach(n => n.classList.add('flash'));
-  setTimeout(() => nodes.forEach(n => n.classList.remove('flash')), ms || 4400);
+function flashILS(on){
+  document.querySelectorAll('.ils').forEach(n => n.classList.toggle('flash', !!on));
 }
 function hideTutor(){
   const box = el('tutor');
@@ -752,6 +750,7 @@ function landSuccess(){
 }
 
 function finish(){
+  flashILS(false);
   st.mode = 'result';
   el('hud').classList.remove('on');
   el('result').classList.add('on');
@@ -960,12 +959,14 @@ function update(dt){
     if (st.tutorial && st.tutIdx < TUT_STEPS.length && st.h <= TUT_STEPS[st.tutIdx].h){
       const step = TUT_STEPS[st.tutIdx];
       showTutor(step);
-      if (step.flash) flashILS(4400);
+      if (step.flash === true) flashILS(true);
+      else if (step.flash === false) flashILS(false);
       st.tutIdx++;
     }
 
     if (st.h <= CFG.checkAlt && !st.checkOn){
       st.checkOn = true;
+      flashILS(false);   /* 判定一开始就停闪，别干扰读指针 */
       st.grace = CFG.graceT;
       if (!st.beeped){ st.beeped = true; sfx.warn(); }
       showToast('500 FT · STABLE APPROACH CHECK', '', 1.6);
