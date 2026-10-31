@@ -1978,6 +1978,9 @@ requestAnimationFrame(loop);
 (function devHook(){
   const q = new URLSearchParams(location.search);
   if (!q.has('dev')) return;
+  /* 只在本地以文件方式打开时生效。线上（http/https）一律忽略，
+     避免玩家用 ?dev=1&alt=60 跳过整个收集阶段直接着陆。 */
+  if (location.protocol !== 'file:') return;
   startGame();
   if (q.get('alt')) st.h = parseFloat(q.get('alt'));
   if (q.get('t')){ st.time = parseFloat(q.get('t')); st.nextGift = 0.2; }
