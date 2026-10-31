@@ -281,12 +281,13 @@
     <div class="rules">
       <div class="rule"><span class="n">1</span><div class="tx"><b>收集礼物。</b>风雪中撞击飞来的礼物盒与气球，随机获得 $15 – $100 优惠券，累计上限 <b>$600</b>。</div></div>
       <div class="rule"><span class="n">2</span><div class="tx"><b>切入进近。</b>礼物停发后，用右侧 G/S 与下方 LOC 把洋红菱形拉回中心，瞄准跑道上那组大白块。左侧 PAPI 灯偏高变白、偏低变红。</div></div>
-      <div class="rule"><span class="n">3</span><div class="tx"><b>400 英尺生死线。</b>低于 400 FT 后进入严格判定，任一指针偏离超过 <b>1 个点</b>即判定不稳定进近。撑到 100 FT 后只要落在跑道道面内，就算着陆成功。</div></div>
+      <div class="rule"><span class="n">3</span><div class="tx"><b>500 英尺生死线。</b>低于 500 FT 后进入严格判定，任一指针偏离超过 <b>1 个点</b>即判定不稳定进近。撑到 100 FT 后只要落在跑道道面内，就算着陆成功。</div></div>
       <div class="rule"><span class="n">4</span><div class="tx"><b>结算。</b>成功着陆保留全部优惠券；进近失败仅保留 <b>50%</b>（向下取整到 $5）。</div></div>
       <div class="rule touchonly"><span class="n">5</span><div class="tx"><b>触屏操作。</b>手指在屏幕上滑动控制雪橇：左右滑转向，上下滑爬升或下降，松手即停。</div></div>
     </div>
 
     <button class="btn" id="btnStart">开始进近 &nbsp;›</button>
+    <button class="btn ghost" id="btnTutorial">新手教程</button>
   </div>
 </div>
 
@@ -355,7 +356,7 @@ const FT2M   = 0.3048;
 
 const CFG = {
   startAlt : 2000,   // 起始高度 ft
-  checkAlt : 400,    // 稳定进近判定高度 ft
+  checkAlt : 500,    // 稳定进近判定高度 ft
   cutoffAlt: 100,    // 判定窗口下沿 ft（以下视为已建立，不再判定）
   sinkHi   : 40,     // 高空下降率 ft/s
   sinkLo   : 22,     // 低空下降率 ft/s
@@ -365,15 +366,15 @@ const CFG = {
   vertMax  : 6.6,    // 垂直最大速度 m/s (≈21 ft/s)
   windLat  : 9.6,    // 横向风峰值 m/s
   windVert : 1.55,   // 垂直风峰值 m/s
-  giftGapA : 0.55,   // 礼物生成间隔下限 s
-  giftGapB : 0.90,   // 礼物生成间隔上限 s
+  giftGapA : 0.50,   // 礼物生成间隔下限 s
+  giftGapB : 0.82,   // 礼物生成间隔上限 s
   giftStop : 470,    // 低于该高度停止生成礼物 ft
   catchDz  : 70,     // 判定距离 m（礼物飞到雪橇跟前才判）
   catchX   : 200,    // 横向容差 px
   catchY   : 150,    // 纵向容差 px
   maxCoupon: 600,
   failKeep : 0.5,
-  graceT   : 0.80,   // 进入 400ft 后的判定宽限 s
+  graceT   : 0.80,   // 进入 500ft 后的判定宽限 s
 };
 
 /* 优惠券面额分布 */
@@ -638,10 +639,12 @@ function proj(x, y, z){
    ══════════════════════════════════════════════════════════════ */
 const el = id => document.getElementById(id);
 
-function startGame(){
+function startGame(tutorial){
   audioInit();
+  const isTut = !!tutorial;
   Object.assign(st, {
-    mode:'play', h:CFG.startAlt, px:0, py:0, vx:0, vy:0,
+    mode:'play', h: isTut ? 700 : CFG.startAlt, px:0, py:0, vx:0, vy:0,
+    tutorial: isTut, tutStep: 0,
     time:0, coupons:[], total:0, hits:0, misses:0,
     gifts:[], parts:[], pops:[], bank:0, pitch:0,
     camX:0, camY:0, shake:0, nextGift:1.6,
@@ -652,7 +655,8 @@ function startGame(){
   el('result').classList.remove('on');
   el('hud').classList.add('on');
   document.querySelectorAll('.pop').forEach(n => n.remove());
-  showToast('COLLECT THE GIFTS', '', 2.2);
+  if (isTut) showToast('教程开始 · 从 700 FT 切入', 'green', 2.4);
+  else showToast('COLLECT THE GIFTS', '', 2.2);
   syncHUD(true);
 }
 
@@ -687,15 +691,24 @@ function finish(){
   const raw = st.total;
   const kept = st.endOK ? raw : Math.floor((raw * CFG.failKeep) / 5) * 5;
 
+  if (st.tutorial){
+    el('rEyebrow').textContent = 'TUTORIAL COMPLETE';
+    el('rVerdict').textContent = st.endOK ? '教程完成' : '再试一次';
+    el('rVerdict').className = 'verdict ' + (st.endOK ? 'ok' : 'bad');
+    el('rSub').textContent = st.endOK
+      ? '你已掌握爬升、下降和 1 个点的判定标准，去挑战真实进近吧。'
+      : '偏差超过 1 个点。回到中心，慢慢来。';
+  } else {
   el('rEyebrow').textContent = st.endOK ? 'APPROACH COMPLETE · RWY 18 · LANDED' : 'APPROACH TERMINATED · GO AROUND';
   el('rVerdict').textContent = st.endOK ? 'PERFECT LANDING!' : 'UNSTABLE APPROACH!';
   el('rVerdict').className = 'verdict ' + (st.endOK ? 'ok' : 'bad');
   el('rSub').textContent = st.endOK
     ? 'Santa has delivered the gifts — and your coupons are ready!'
     : (st.failMsg === 'rwy' ? 'Santa touched down off the runway. Keep it on the pavement.'
-     : st.failMsg === 'loc' ? 'Santa drifted off the centreline below 400 ft. Try again.'
-     : st.failMsg === 'gs'  ? 'Santa lost the glide path below 400 ft. Try again.'
+     : st.failMsg === 'loc' ? 'Santa drifted off the centreline below 500 ft. Try again.'
+     : st.failMsg === 'gs'  ? 'Santa lost the glide path below 500 ft. Try again.'
      : 'Santa, you missed the landing! Try again.');
+  }
 
   el('rTotal').textContent = '$' + kept;
   el('rNote').textContent = st.endOK
@@ -806,7 +819,7 @@ function update(dt){
     st.nextGift -= dt;
     if (st.nextGift <= 0){
       spawnGift();
-      st.nextGift = rand(CFG.giftGapA, CFG.giftGapB);
+      st.nextGift = rand(CFG.giftGapA, CFG.giftGapB) * (st.tutorial ? 2.0 : 1);
     }
   }
 
@@ -864,11 +877,30 @@ function update(dt){
   if (st.h <= CFG.checkAlt && st.h > CFG.cutoffAlt) st.maxDev = Math.max(st.maxDev, Math.abs(locDot), Math.abs(gsDot));
 
   if (st.mode === 'play'){
+    if (st.tutorial){
+      if (st.tutStep === 0 && st.h <= 695){
+        st.tutStep = 1;
+        showToast('键盘 ↓ 键 = 爬升 · ↑ 键 = 下降', 'green', 4.2);
+      } else if (st.tutStep === 1 && st.h <= 640){
+        st.tutStep = 2;
+        showToast('触屏：按住屏幕拖动，向下拉 = 爬升', 'green', 4.2);
+      } else if (st.tutStep === 2 && st.h <= 560){
+        st.tutStep = 3;
+        showToast('注意 · 500 FT 起开始稳定进近判定', '', 3.2);
+      } else if (st.tutStep === 3 && st.h <= CFG.checkAlt){
+        st.tutStep = 4;
+        showToast('500 到 100 FT · 两个指针都保持在 1 个点内', 'red', 4.5);
+      } else if (st.tutStep === 4 && st.h <= 130){
+        st.tutStep = 5;
+        showToast('通过判定 · 对准跑道道面落地', 'green', 3.0);
+      }
+    }
+
     if (st.h <= CFG.checkAlt && !st.checkOn){
       st.checkOn = true;
       st.grace = CFG.graceT;
       if (!st.beeped){ st.beeped = true; sfx.warn(); }
-      showToast('400 FT · STABLE APPROACH CHECK', '', 1.6);
+      showToast('500 FT · STABLE APPROACH CHECK', '', 1.6);
     }
     if (st.checkOn && st.h > CFG.cutoffAlt){
       if (st.grace > 0){
@@ -1099,7 +1131,7 @@ function drawRunway(){
   const gy = -hm;                       // 地面相对下滑道的高度
 
   /* 能见度：低空逐渐转好，跑道在 600ft 以下才真正显现 */
-  const vis = clamp(320 + (CFG.startAlt - st.h) * 2.7, 320, 5400);
+  const vis = clamp(320 + (CFG.startAlt - st.h) * 2.7, 320, 5400) * (st.tutorial ? 1.9 : 1);
   const rwAlpha = clamp(1.45 - Z / vis, 0, 1);
 
   /* --- 雪原（跑道两侧的雪地反光） --- */
@@ -1829,7 +1861,7 @@ function drawAtmosphere(){
   ctx.fillStyle = vg;
   ctx.fillRect(0, 0, W, H);
 
-  /* 400ft 后危险红边 */
+  /* 500ft 后危险红边 */
   if (st.mode === 'play' && st.checkOn && !st.failed){
     const Z = zp();
     const dev = Math.max(Math.abs(st.px / (Z * DOT_LO)), Math.abs(st.py / (Z * DOT_GS)));
@@ -1960,7 +1992,8 @@ if (IS_TOUCH){
   document.querySelectorAll('.touchonly').forEach(n => { n.style.display = 'flex'; });
 }
 
-el('btnStart').addEventListener('click', e => { e.stopPropagation(); startGame(); });
+el('btnStart').addEventListener('click', e => { e.stopPropagation(); startGame(false); });
+el('btnTutorial').addEventListener('click', e => { e.stopPropagation(); startGame(true); });
 el('btnRetry').addEventListener('click', e => { e.stopPropagation(); startGame(); });
 
 resize();
@@ -1981,7 +2014,7 @@ requestAnimationFrame(loop);
   /* 只在本地以文件方式打开时生效。线上（http/https）一律忽略，
      避免玩家用 ?dev=1&alt=60 跳过整个收集阶段直接着陆。 */
   if (location.protocol !== 'file:') return;
-  startGame();
+  startGame(q.has('tut'));
   if (q.get('alt')) st.h = parseFloat(q.get('alt'));
   if (q.get('t')){ st.time = parseFloat(q.get('t')); st.nextGift = 0.2; }
   if (q.get('px')) st.px = parseFloat(q.get('px'));
