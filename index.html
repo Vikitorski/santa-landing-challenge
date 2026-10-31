@@ -117,7 +117,25 @@
     100%{opacity:0;transform:translate(-50%,-64px) scale(.95)}
   }
 
-    /* ---------- 覆盖层 ---------- */
+    /* ---------- 教程引导 ---------- */
+  #tutor{position:fixed;left:50%;top:12%;transform:translateX(-50%);
+    width:min(600px,88vw);padding:15px 20px 17px;border-radius:15px;
+    background:rgba(6,12,24,.94);border:1px solid rgba(60,230,168,.5);
+    z-index:40;display:none;text-align:center;
+    box-shadow:0 24px 60px -24px rgba(0,0,0,.95)}
+  #tutor.on{display:block}
+  #tutor .tStep{font-family:var(--mono);font-size:9.5px;letter-spacing:.24em;
+    color:#5cf5bb;text-transform:uppercase}
+  #tutor .tTitle{font-size:17px;font-weight:700;margin:7px 0 8px;color:#ffffff;letter-spacing:.02em}
+  #tutor .tBody{font-size:13px;line-height:1.7;color:#d3e2f4}
+  #tutor .tBody b{color:#5cf5bb;font-weight:700}
+  @media(max-width:620px){
+    #tutor{top:9%;padding:12px 14px 14px}
+    #tutor .tTitle{font-size:14px}
+    #tutor .tBody{font-size:11px;line-height:1.6}
+  }
+
+  /* ---------- 覆盖层 ---------- */
   .overlay{position:fixed;inset:0;display:none;align-items:center;justify-content:center;
     background:radial-gradient(ellipse at 50% 38%,rgba(8,16,32,.44),rgba(2,5,10,.82) 76%);
     backdrop-filter:blur(2px);-webkit-backdrop-filter:blur(2px);z-index:20;padding:22px}
@@ -263,7 +281,7 @@
     <div class="ils-cap">LOC</div>
   </div>
 
-  <div id="hint">
+<div id="hint">
     <b>↓</b><b>↑</b><b>←</b><b>→</b>
     <span>↓ CLIMB · ↑ DESCEND · ← → BANK</span>
   </div>
@@ -299,7 +317,7 @@
     <div class="vsub" id="rSub">Santa has delivered the gifts — and your coupons are ready!</div>
 
     <div class="totalwrap">
-      <div class="lab">TOTAL COUPON VALUE</div>
+      <div class="lab" id="rLab">TOTAL COUPON VALUE</div>
       <div class="amt" id="rTotal">$0</div>
       <div class="note" id="rNote">全部优惠券已存入账户</div>
     </div>
@@ -639,12 +657,52 @@ function proj(x, y, z){
    ══════════════════════════════════════════════════════════════ */
 const el = id => document.getElementById(id);
 
+/* 新手教程的分步引导：按高度依次弹出，一直停在画面上直到下一步 */
+const TUT_STEPS = [
+  { h:2400, tag:'1 / 5', title:'欢迎来到新手教程',
+    body:'跟着屏幕上的提示走，每一步做到就自动进入下一步。现在先熟悉一下操控。' },
+  { h:2300, tag:'2 / 5', title:'左右移动 · 对准横向位置',
+    body:'按 <b>← →</b> 键，或在屏幕上<b>左右滑动</b>。把雪橇移到礼物所在的横向位置。' },
+  { h:2150, tag:'3 / 5', title:'爬升与下降',
+    body:'按 <b>↓</b> 键爬升，<b>↑</b> 键下降。触屏时<b>向下拉 = 爬升</b>，向上拉 = 下降。' },
+  { h:1950, tag:'4 / 5', title:'撞上去，拿优惠券',
+    body:'把雪橇对准飞来的礼物盒和气球，<b>直接撞过去</b>。每撞到一个都有优惠券，累计最高 $600。' },
+  { h:1600, tag:'5 / 5', title:'自由练习',
+    body:'继续收集礼物。同时留意右侧 <b>G/S</b> 和下方 <b>LOC</b> 两个洋红菱形指针，别让它们偏太远。' },
+  { h:700,  tag:'进近',  title:'准备切入进近',
+    body:'礼物即将停发。把两个指针都拉回中心，瞄准跑道上那组<b>白色大块</b>。' },
+  { h:500,  tag:'判定',  title:'稳定进近开始 · 500 FT',
+    body:'从现在到 100 FT，两个指针都必须保持在<b>中心 1 个点以内</b>。超了就算不稳定进近。' },
+  { h:130,  tag:'落地',  title:'通过判定',
+    body:'对准跑道道面，稳稳落下去。落在跑道外会算失败。' }
+];
+
+function showTutor(item){
+  const box = el('tutor');
+  if (!box) return;
+  el('tStep').textContent = item.tag;
+  el('tTitle').textContent = item.title;
+  el('tBody').innerHTML = item.body;
+  box.classList.add('on');
+}
+function hideTutor(){
+  const box = el('tutor');
+  if (box) box.classList.remove('on');
+}
+function showMenu(){
+  st.mode = 'menu';
+  hideTutor();
+  el('result').classList.remove('on');
+  el('hud').classList.remove('on');
+  el('menu').classList.add('on');
+}
+
 function startGame(tutorial){
   audioInit();
   const isTut = !!tutorial;
   Object.assign(st, {
-    mode:'play', h: isTut ? 700 : CFG.startAlt, px:0, py:0, vx:0, vy:0,
-    tutorial: isTut, tutStep: 0,
+    mode:'play', h: isTut ? 2400 : CFG.startAlt, px:0, py:0, vx:0, vy:0,
+    tutorial: isTut, tutIdx: 0,
     time:0, coupons:[], total:0, hits:0, misses:0,
     gifts:[], parts:[], pops:[], bank:0, pitch:0,
     camX:0, camY:0, shake:0, nextGift:1.6,
@@ -655,7 +713,8 @@ function startGame(tutorial){
   el('result').classList.remove('on');
   el('hud').classList.add('on');
   document.querySelectorAll('.pop').forEach(n => n.remove());
-  if (isTut) showToast('教程开始 · 从 700 FT 切入', 'green', 2.4);
+  hideTutor();
+  if (isTut) showToast('新手教程开始', 'green', 2.0);
   else showToast('COLLECT THE GIFTS', '', 2.2);
   syncHUD(true);
 }
@@ -692,12 +751,14 @@ function finish(){
   const kept = st.endOK ? raw : Math.floor((raw * CFG.failKeep) / 5) * 5;
 
   if (st.tutorial){
+    hideTutor();
     el('rEyebrow').textContent = 'TUTORIAL COMPLETE';
-    el('rVerdict').textContent = st.endOK ? '教程完成' : '再试一次';
+    el('rVerdict').textContent = st.endOK ? '教程完成' : '教程未通过';
     el('rVerdict').className = 'verdict ' + (st.endOK ? 'ok' : 'bad');
     el('rSub').textContent = st.endOK
-      ? '你已掌握爬升、下降和 1 个点的判定标准，去挑战真实进近吧。'
-      : '偏差超过 1 个点。回到中心，慢慢来。';
+      ? '你已掌握左右、上下和 1 个点的判定标准。教程局不发放优惠券，去挑战正式进近吧。'
+      : '偏差超过 1 个点。回到中心，慢慢来，再试一次就好。';
+    el('btnRetry').textContent = '返回主界面';
   } else {
   el('rEyebrow').textContent = st.endOK ? 'APPROACH COMPLETE · RWY 18 · LANDED' : 'APPROACH TERMINATED · GO AROUND';
   el('rVerdict').textContent = st.endOK ? 'PERFECT LANDING!' : 'UNSTABLE APPROACH!';
@@ -708,8 +769,17 @@ function finish(){
      : st.failMsg === 'loc' ? 'Santa drifted off the centreline below 500 ft. Try again.'
      : st.failMsg === 'gs'  ? 'Santa lost the glide path below 500 ft. Try again.'
      : 'Santa, you missed the landing! Try again.');
+    el('btnRetry').textContent = '再来一次';
   }
 
+  if (st.tutorial){
+    /* 教程局只是练习，不产生优惠券 */
+    el('rLab').textContent = 'PRACTICE RUN';
+    el('rTotal').textContent = '—';
+    el('rNote').textContent = '教程局不记录优惠券';
+    el('rCoupons').innerHTML = '';
+  } else {
+  el('rLab').textContent = 'TOTAL COUPON VALUE';
   el('rTotal').textContent = '$' + kept;
   el('rNote').textContent = st.endOK
     ? '全部优惠券已存入账户，可组合使用'
@@ -729,6 +799,7 @@ function finish(){
     const d = document.createElement('div');
     d.className = 'cp dim'; d.textContent = 'NO COUPON';
     box.appendChild(d);
+  }
   }
 
   el('rHits').textContent = st.hits;
@@ -877,23 +948,9 @@ function update(dt){
   if (st.h <= CFG.checkAlt && st.h > CFG.cutoffAlt) st.maxDev = Math.max(st.maxDev, Math.abs(locDot), Math.abs(gsDot));
 
   if (st.mode === 'play'){
-    if (st.tutorial){
-      if (st.tutStep === 0 && st.h <= 695){
-        st.tutStep = 1;
-        showToast('键盘 ↓ 键 = 爬升 · ↑ 键 = 下降', 'green', 4.2);
-      } else if (st.tutStep === 1 && st.h <= 640){
-        st.tutStep = 2;
-        showToast('触屏：按住屏幕拖动，向下拉 = 爬升', 'green', 4.2);
-      } else if (st.tutStep === 2 && st.h <= 560){
-        st.tutStep = 3;
-        showToast('注意 · 500 FT 起开始稳定进近判定', '', 3.2);
-      } else if (st.tutStep === 3 && st.h <= CFG.checkAlt){
-        st.tutStep = 4;
-        showToast('500 到 100 FT · 两个指针都保持在 1 个点内', 'red', 4.5);
-      } else if (st.tutStep === 4 && st.h <= 130){
-        st.tutStep = 5;
-        showToast('通过判定 · 对准跑道道面落地', 'green', 3.0);
-      }
+    if (st.tutorial && st.tutIdx < TUT_STEPS.length && st.h <= TUT_STEPS[st.tutIdx].h){
+      showTutor(TUT_STEPS[st.tutIdx]);
+      st.tutIdx++;
     }
 
     if (st.h <= CFG.checkAlt && !st.checkOn){
@@ -1994,7 +2051,11 @@ if (IS_TOUCH){
 
 el('btnStart').addEventListener('click', e => { e.stopPropagation(); startGame(false); });
 el('btnTutorial').addEventListener('click', e => { e.stopPropagation(); startGame(true); });
-el('btnRetry').addEventListener('click', e => { e.stopPropagation(); startGame(); });
+el('btnRetry').addEventListener('click', e => {
+  e.stopPropagation();
+  if (st.tutorial) showMenu();
+  else startGame(false);
+});
 
 resize();
 updateCamera();
@@ -2070,6 +2131,12 @@ requestAnimationFrame(loop);
   }
 })();
 </script>
+<div id="tutor">
+  <div class="tStep" id="tStep">1 / 5</div>
+  <div class="tTitle" id="tTitle"></div>
+  <div class="tBody" id="tBody"></div>
+</div>
+
 </body>
 </html>
 
