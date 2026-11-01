@@ -2023,10 +2023,10 @@ function syncHUD(force){
   locBand.style.width = (locDotPx * 2) + 'px';
   locBand.style.borderColor = st.checkOn ? 'rgba(60,230,168,.45)' : 'rgba(60,230,168,.22)';
 
-  /* --- 偏离提醒：任何高度超过 1 个点都闪对应指示器并出文字 --- */
-  const playing = st.mode === 'play';
-  const locFlash = playing && (locOver || st.tutFlashAll);
-  const gsFlash  = playing && (gsOver  || st.tutFlashAll);
+  /* --- 偏离提醒：1000ft 以下，只要超过 1 个点就闪对应指示器并出文字 --- */
+  const alertOn = st.mode === 'play' && st.h <= 1000;
+  const locFlash = alertOn && (locOver || st.tutFlashAll);
+  const gsFlash  = alertOn && (gsOver  || st.tutFlashAll);
 
   const boxLoc = document.querySelector('.ils-h');
   const boxGs  = document.querySelector('.ils-v');
@@ -2035,7 +2035,7 @@ function syncHUD(force){
 
   const warn = el('devWarn');
   if (warn){
-    const show = playing && (locOver || gsOver);
+    const show = alertOn && (locOver || gsOver);
     if (show !== st._warnOn){ st._warnOn = show; warn.classList.toggle('on', show); }
     if (show){
       const msg = (locOver && gsOver) ? 'LOC / GS 偏离' : (locOver ? 'LOC 偏离' : 'GS 偏离');
