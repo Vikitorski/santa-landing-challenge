@@ -121,7 +121,19 @@
     100%{opacity:0;transform:translate(-50%,-64px) scale(.95)}
   }
 
-    /* ---------- 教程引导 ---------- */
+    /* ---------- 偏离警告 ---------- */
+  #devWarn{position:fixed;left:50%;top:27%;transform:translateX(-50%);
+    padding:9px 22px;border-radius:10px;background:rgba(214,38,58,.94);
+    color:#fff;font-size:15px;font-weight:700;letter-spacing:.1em;
+    display:none;z-index:39;white-space:nowrap;
+    box-shadow:0 14px 34px -12px rgba(214,38,58,.85)}
+  #devWarn.on{display:block;animation:warnPulse 1s ease-in-out infinite}
+  @keyframes warnPulse{0%,100%{opacity:1}50%{opacity:.6}}
+  @media(max-width:620px){
+    #devWarn{top:24%;font-size:13px;padding:8px 16px}
+  }
+
+  /* ---------- 教程引导 ---------- */
   #tutor{position:fixed;left:50%;top:12%;transform:translateX(-50%);
     width:min(600px,88vw);padding:15px 20px 17px;border-radius:15px;
     background:rgba(6,12,24,.94);border:1px solid rgba(60,230,168,.5);
@@ -690,9 +702,7 @@ function showTutor(item){
   el('tBody').innerHTML = item.body;
   box.classList.add('on');
 }
-function flashILS(on){
-  document.querySelectorAll('.ils').forEach(n => n.classList.toggle('flash', !!on));
-}
+function flashILS(on){ st.tutFlashAll = !!on; }
 function hideTutor(){
   const box = el('tutor');
   if (box) box.classList.remove('on');
@@ -710,7 +720,7 @@ function startGame(tutorial){
   const isTut = !!tutorial;
   Object.assign(st, {
     mode:'play', h: isTut ? 2400 : CFG.startAlt, px:0, py:0, vx:0, vy:0,
-    tutorial: isTut, tutIdx: 0,
+    tutorial: isTut, tutIdx: 0, tutFlashAll: false,
     time:0, coupons:[], total:0, hits:0, misses:0,
     gifts:[], parts:[], pops:[], bank:0, pitch:0,
     camX:0, camY:0, shake:0, nextGift:1.6,
@@ -753,6 +763,8 @@ function landSuccess(){
 function finish(){
   flashILS(false);
   st.mode = 'result';
+  document.querySelectorAll('.ils').forEach(n => n.classList.remove('flash'));
+  const w = el('devWarn'); if (w) w.classList.remove('on');
   el('hud').classList.remove('on');
   el('result').classList.add('on');
 
@@ -2010,6 +2022,26 @@ function syncHUD(force){
   locBand.style.left = (locW / 2 - locDotPx) + 'px';
   locBand.style.width = (locDotPx * 2) + 'px';
   locBand.style.borderColor = st.checkOn ? 'rgba(60,230,168,.45)' : 'rgba(60,230,168,.22)';
+
+  /* --- 偏离提醒：任何高度超过 1 个点都闪对应指示器并出文字 --- */
+  const playing = st.mode === 'play';
+  const locFlash = playing && (locOver || st.tutFlashAll);
+  const gsFlash  = playing && (gsOver  || st.tutFlashAll);
+
+  const boxLoc = document.querySelector('.ils-h');
+  const boxGs  = document.querySelector('.ils-v');
+  if (boxLoc && locFlash !== st._locFlash){ st._locFlash = locFlash; boxLoc.classList.toggle('flash', locFlash); }
+  if (boxGs  && gsFlash  !== st._gsFlash ){ st._gsFlash  = gsFlash;  boxGs.classList.toggle('flash', gsFlash); }
+
+  const warn = el('devWarn');
+  if (warn){
+    const show = playing && (locOver || gsOver);
+    if (show !== st._warnOn){ st._warnOn = show; warn.classList.toggle('on', show); }
+    if (show){
+      const msg = (locOver && gsOver) ? 'LOC / GS 偏离' : (locOver ? 'LOC 偏离' : 'GS 偏离');
+      if (warn.textContent !== msg) warn.textContent = msg;
+    }
+  }
 }
 
 /* ---------- Toast ---------- */
@@ -2144,6 +2176,8 @@ requestAnimationFrame(loop);
   }
 })();
 </script>
+<div id="devWarn"></div>
+
 <div id="tutor">
   <div class="tStep" id="tStep">1 / 5</div>
   <div class="tTitle" id="tTitle"></div>
