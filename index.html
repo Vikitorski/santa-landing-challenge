@@ -379,6 +379,7 @@ const FT2M   = 0.3048;
 const CFG = {
   startAlt : 2000,   // 起始高度 ft
   checkAlt : 500,    // 稳定进近判定高度 ft
+  rwyFar   : 3300,   // 跑道末端距接地区 m（航向台位置）
   cutoffAlt: 100,    // 判定窗口下沿 ft（以下视为已建立，不再判定）
   sinkHi   : 40,     // 高空下降率 ft/s
   sinkLo   : 22,     // 低空下降率 ft/s
@@ -950,7 +951,7 @@ function update(dt){
   }
 
   /* ---- 稳定进近判定 ---- */
-  const locDot = st.px / (Z * DOT_LO);
+  const locDot = st.px / ((Z + CFG.rwyFar) * DOT_LO);
   const gsDot  = st.py / (Z * DOT_GS);
   /* 只统计判定窗口内的偏差 */
   if (st.h <= CFG.checkAlt && st.h > CFG.cutoffAlt) st.maxDev = Math.max(st.maxDev, Math.abs(locDot), Math.abs(gsDot));
@@ -1963,7 +1964,7 @@ function syncHUD(force){
   if (!force && hudTick % 2) return;
 
   const Z = zp();
-  const locDot = st.px / (Z * DOT_LO);
+  const locDot = st.px / ((Z + CFG.rwyFar) * DOT_LO);
   const gsDot  = st.py / (Z * DOT_GS);
 
   el('hGifts').textContent = st.hits;
