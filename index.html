@@ -193,6 +193,10 @@
   .btn.ghost{background:transparent;border:1px solid rgba(120,170,220,.35);color:var(--ice);
     box-shadow:none;margin-top:10px}
   .btn.ghost:hover{border-color:rgba(120,170,220,.7)}
+  .btn.save{margin-top:18px;background:linear-gradient(135deg,#4bf0b6,#1fb87d);
+    color:#04140d;font-weight:700;letter-spacing:.14em;
+    box-shadow:0 18px 38px -16px rgba(60,230,168,.95)}
+  .btn.save:disabled{opacity:.55;cursor:default;transform:none;box-shadow:none}
 
   /* 结算 */
   .verdict{font-family:var(--mono);font-size:clamp(17px,3.4vw,23px);letter-spacing:.16em;
@@ -348,8 +352,11 @@
       <div><span class="k">MAX DEV</span><span class="v" id="rDev">0.00</span></div>
     </div>
 
+    <!-- 保存优惠：点击后交给外部接入方处理（见文件末尾 CSCouponBridge 对接说明） -->
+    <button class="btn save" id="btnSave">保存优惠到我的账号</button>
+
     <div class="btnrow">
-      <button class="btn" id="btnRetry">再飞一次 &nbsp;›</button>
+      <button class="btn ghost" id="btnRetry">再飞一次</button>
       <button class="btn ghost" id="btnMenu">返回主菜单</button>
     </div>
   </div>
@@ -835,6 +842,14 @@ function finish(){
     d.className = 'cp dim'; d.textContent = 'NO COUPON';
     box.appendChild(d);
   }
+  }
+
+  const sb = el('btnSave');
+  if (sb){
+    sb.disabled = false;
+    sb.textContent = '保存优惠到我的账号';
+    /* 教程局不发放优惠券，隐藏保存入口 */
+    sb.style.display = st.tutorial ? 'none' : '';
   }
 
   el('rHits').textContent = st.hits;
@@ -2113,6 +2128,115 @@ if (IS_TOUCH){
 
 el('btnStart').addEventListener('click', e => { e.stopPropagation(); startGame(false); });
 el('btnTutorial').addEventListener('click', e => { e.stopPropagation(); startGame(true); });
+/* ═══════════════════════════════════════════════════════════════════════
+   【对接说明】保存优惠券
+   ───────────────────────────────────────────────────────────────────────
+   点「保存优惠到我的账号」时，本页会把这一局的成绩打包成 payload，
+   然后依次寻找外部接入的保存函数：
+
+     1) window.CSCouponBridge.save(payload)   ← 推荐，接入方实现
+     2) window.onSaveCoupon(payload)          ← 兼容写法
+
+   两个都找不到时，只打一条 console.warn，不报错，页面照常可用。
+
+   ── payload 结构 ──────────────────────────────────────────────────────
+   {
+     ok:       true | false,   // 是否成功着陆（失败时优惠券按 50% 折算）
+     coupons:  [100, 40, 25],  // 券面额列表，已按 ok 折算并向下取整到 $5
+     total:    165,            // 合计金额（折算后，和结算页显示的一致）
+     rawTotal: 330,            // 折算前的金额
+     hits:     12,             // 撞中的礼物数
+     misses:   48,             // 错过的礼物数
+     maxDev:   0.31,           // 判定窗口内的最大偏差（单位：点）
+     tutorial: false,          // 是否教程局（教程局不会进到这里）
+     issuedAt: "2026-11-02T01:28:00.000Z",
+     version:  "1.0"
+   }
+
+   ── 接入方需要做的 ────────────────────────────────────────────────────
+   · 在页面里（本文件之前或之后都行）定义：
+       window.CSCouponBridge = {
+         save(payload){
+           // 1. 校验 payload.total 是否 <= 600
+           // 2. 跳转登录 / 微信授权，拿到用户身份
+           // 3. 调后端接口把 coupons 写入该账号（后端要做一次性 token 防重放）
+           // 4. resolve 表示成功，本页会显示「已保存」
+           return fetch('/api/coupon/save', {...}).then(r => r.json());
+         }
+       };
+   · 返回 Promise 时，本页会等它结束再给用户反馈；
+     抛错或 reject，本页提示「保存失败，请稍后重试」。
+   · 想自定义跳转，直接在 save() 里 location.href 到绑定页即可。
+
+   ── 重要提醒 ──────────────────────────────────────────────────────────
+   本页不保存任何数据、不发任何请求。所有落库、鉴权、防作弊都在后端完成。
+   前端拿到的 total 可以被篡改（浏览器控制台能改内存），
+   务必在后端重新校验上限，并用一次性 token 限制重复提交。
+   ═══════════════════════════════════════════════════════════════════════ */
+
+function buildCouponPayload(){
+  const raw = st.total;
+  const list = st.coupons.slice().sort((a, b) => b - a);
+  const coupons = st.endOK
+    ? list
+    : list.map(v => Math.floor((v * CFG.failKeep) / 5) * 5).filter(v => v > 0);
+  const total = st.endOK ? raw : Math.floor((raw * CFG.failKeep) / 5) * 5;
+
+  return {
+    ok:       !!st.endOK,
+    coupons:  coupons,
+    total:    total,
+    rawTotal: raw,
+    hits:     st.hits,
+    misses:   st.misses,
+    maxDev:   +st.maxDev.toFixed(2),
+    tutorial: !!st.tutorial,
+    issuedAt: new Date().toISOString(),
+    version:  '1.0'
+  };
+}
+
+async function handleSaveCoupon(){
+  if (st.tutorial){
+    showToast('教程局不发放优惠券', '', 2.2);
+    return;
+  }
+
+  const payload = buildCouponPayload();
+
+  const bridge = window.CSCouponBridge;
+  const legacy = window.onSaveCoupon;
+  const fn = (bridge && typeof bridge.save === 'function')
+    ? bridge.save.bind(bridge)
+    : (typeof legacy === 'function' ? legacy : null);
+
+  if (!fn){
+    console.warn('[CS Coupon] 未接入保存功能。payload =', payload);
+    showToast('保存功能尚未接入', '', 2.6);
+    return;
+  }
+
+  const btn = el('btnSave');
+  btn.disabled = true;
+  btn.textContent = '保存中…';
+
+  try {
+    await fn(payload);
+    btn.textContent = '已保存 ✓';
+    showToast('优惠券已保存到你的账号', 'green', 2.6);
+  } catch (err){
+    console.error('[CS Coupon] 保存失败', err);
+    btn.disabled = false;
+    btn.textContent = '保存优惠到我的账号';
+    showToast('保存失败，请稍后重试', 'red', 2.6);
+  }
+}
+
+el('btnSave').addEventListener('click', e => {
+  e.stopPropagation();
+  handleSaveCoupon();
+});
+
 el('btnRetry').addEventListener('click', e => {
   e.stopPropagation();
   startGame(st.tutorial);
