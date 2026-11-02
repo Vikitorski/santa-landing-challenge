@@ -1157,7 +1157,90 @@ function render(dt){
 
   ctx.restore();
 
+  drawAttitude();
+
   if (st.mode === 'play' || st.mode === 'ending') syncHUD(false);
+}
+
+/* ---------- 姿态仪（左下角，显示俯仰与滚转） ---------- */
+function drawAttitude(){
+  if (st.mode === 'menu') return;
+
+  const R = 50;
+  const cx = 26 + R;
+  const cy = H - 26 - R;
+
+  /* 基准 -3°（下滑道），操作时在 ±12° 内变化；滚转最大 ±35° */
+  const pitchDeg = -3 + st.pitch * 12;
+  const rollRad  = st.bank * 35 * Math.PI / 180;
+  const pxPerDeg = R / 22;
+
+  ctx.save();
+
+  /* 盘面底色 */
+  ctx.beginPath();
+  ctx.arc(cx, cy, R + 2, 0, 6.283);
+  ctx.fillStyle = 'rgba(6,12,22,.78)';
+  ctx.fill();
+
+  /* 裁剪成圆 */
+  ctx.beginPath();
+  ctx.arc(cx, cy, R, 0, 6.283);
+  ctx.clip();
+
+  ctx.translate(cx, cy);
+  ctx.rotate(rollRad);
+
+  const off = pitchDeg * pxPerDeg;
+
+  /* 天空 */
+  ctx.fillStyle = '#17324e';
+  ctx.fillRect(-R * 2, -R * 2 + off, R * 4, R * 2);
+  /* 地面 */
+  ctx.fillStyle = '#33261a';
+  ctx.fillRect(-R * 2, off, R * 4, R * 2);
+
+  /* 地平线 */
+  ctx.strokeStyle = 'rgba(234,244,255,.92)';
+  ctx.lineWidth = 1.4;
+  ctx.beginPath();
+  ctx.moveTo(-R * 1.7, off);
+  ctx.lineTo(R * 1.7, off);
+  ctx.stroke();
+
+  /* 俯仰刻度：±10 / ±20 */
+  ctx.strokeStyle = 'rgba(234,244,255,.5)';
+  ctx.lineWidth = 1;
+  for (const d of [-20, -10, 10, 20]){
+    const y = off - d * pxPerDeg;
+    const w = Math.abs(d) === 10 ? 11 : 19;
+    ctx.beginPath();
+    ctx.moveTo(-w, y);
+    ctx.lineTo(w, y);
+    ctx.stroke();
+  }
+
+  ctx.restore();
+
+  /* 固定的飞机符号 */
+  ctx.save();
+  ctx.translate(cx, cy);
+  ctx.strokeStyle = '#ffcc33';
+  ctx.lineWidth = 2;
+  ctx.lineCap = 'round';
+  ctx.beginPath();
+  ctx.moveTo(-19, 0); ctx.lineTo(-7, 0);
+  ctx.moveTo(7, 0);   ctx.lineTo(19, 0);
+  ctx.moveTo(-4, 0);  ctx.lineTo(0, 4.5); ctx.lineTo(4, 0);
+  ctx.stroke();
+  ctx.restore();
+
+  /* 外圈 */
+  ctx.beginPath();
+  ctx.arc(cx, cy, R, 0, 6.283);
+  ctx.strokeStyle = 'rgba(130,180,230,.55)';
+  ctx.lineWidth = 1.5;
+  ctx.stroke();
 }
 
 /* ---------- 天空 ---------- */
