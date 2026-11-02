@@ -909,7 +909,9 @@ function finish(){
   if (sb){
     /* 教程局不发放优惠券，隐藏保存入口 */
     sb.style.display = st.tutorial ? 'none' : '';
-    if (couponLocked()){
+    let locked = false;
+    try { locked = localStorage.getItem('cs_coupon_locked') === '1'; } catch (e){}
+    if (locked){
       sb.disabled = true;
       sb.textContent = '优惠券已保存，无法更改';
     } else {
@@ -2374,7 +2376,9 @@ function buildCouponPayload(){
 }
 
 /* 保存回调由接入方注册，注册后即锁定，之后无法被覆盖，
-   玩家不能在控制台塞一个假的 save 函数进来。 */
+   玩家不能在控制台塞一个假的 save 函数进来。
+   整段包进 IIFE，bridge 与锁状态都不在全局作用域，控制台够不着。 */
+(function(){
 let couponBridge = null;
 let couponBridgeLocked = false;
 
@@ -2468,6 +2472,7 @@ el('btnScYes').addEventListener('click', e => {
   el('saveBox').classList.remove('on');
   handleSaveCoupon();
 });
+})();
 
 el('btnRetry').addEventListener('click', e => {
   e.stopPropagation();
