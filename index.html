@@ -274,6 +274,7 @@
 
   <div class="box hud-tr">
     <div class="stat"><span class="k">ALT</span><span class="v" id="hAlt">2000<em>FT</em></span></div>
+    <div class="stat"><span class="k">V/S</span><span class="v sm" id="hVs">0<em>FPM</em></span></div>
     <div class="stat"><span class="k">PHASE</span><span class="v sm" id="hPhase">COLLECT</span></div>
   </div>
 
@@ -1600,7 +1601,9 @@ function drawSleigh(){
   ctx.save();
   ctx.translate(bx, by + bob);
   ctx.rotate(st.bank * 0.22);
-  ctx.scale(scale, scale);
+  /* 俯仰：抬头时从后上方看到更多机背，视觉上压扁；低头时拉长 */
+  const pitchSquash = 1 - clamp(st.pitch, -1, 1) * 0.13;
+  ctx.scale(scale, scale * pitchSquash);
 
   drawDeer(-62, -42, -1, bob2);
   drawDeer( 62, -42,  1, -bob2);
@@ -2017,6 +2020,15 @@ function syncHUD(force){
   el('hGifts').textContent = st.hits;
   el('hTotal').textContent = '$' + st.total;
   el('hAlt').innerHTML = Math.max(0, Math.round(st.h)) + '<em>FT</em>';
+
+  /* 垂直速度：正为爬升、负为下降，单位 ft/min */
+  /* st.vy 单位 m/s，sinkRate() 单位 ft/s，先统一再换算成 ft/min */
+  const vsFpm = Math.round((st.vy * 3.28084 - sinkRate()) * 60);
+  const vsEl = el('hVs');
+  if (vsEl){
+    vsEl.innerHTML = (vsFpm > 0 ? '+' : '') + vsFpm + '<em>FPM</em>';
+    vsEl.style.color = vsFpm > 150 ? '#5cf5bb' : (vsFpm < -150 ? '#ffb36b' : '');
+  }
 
   const wkt = Math.abs(st.windX) * 1.944;
   const wh  = el('hWind');
