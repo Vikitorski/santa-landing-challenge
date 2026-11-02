@@ -203,6 +203,15 @@
     transition:transform .12s,box-shadow .2s}
   .btn:hover{transform:translateY(-1px);box-shadow:0 18px 40px -14px rgba(60,230,168,1)}
   .btn:active{transform:translateY(1px) scale(.99)}
+  .scnotes{list-style:none;margin:14px 0 18px;padding:0;text-align:left}
+  .scnotes li{position:relative;padding-left:17px;margin:9px 0;
+    font-size:12.5px;line-height:1.65;color:#a9c2dc}
+  .scnotes li::before{content:'·';position:absolute;left:5px;top:-1px;
+    color:#5cf5bb;font-weight:700}
+  .scnotes li.warn{color:#ffb36b}
+  .scnotes li.warn::before{color:#ffb36b}
+  .scnotes b{color:#5cf5bb;font-weight:600}
+
   .btnrow{display:flex;gap:10px;margin-top:4px}
   .btnrow .btn{margin-top:0}
   .btn.ghost{background:transparent;border:1px solid rgba(120,170,220,.35);color:var(--ice);
@@ -388,6 +397,23 @@
     <div class="btnrow">
       <button class="btn ghost" id="btnRetry">再飞一次</button>
       <button class="btn ghost" id="btnMenu">返回主菜单</button>
+    </div>
+  </div>
+</div>
+
+<div class="overlay" id="saveBox">
+  <div class="card">
+    <div class="eyebrow">SAVE COUPONS</div>
+    <div class="verdict ok">确认保存这笔优惠？</div>
+    <div class="vsub">当前额度 <b id="scTotal" style="color:#5cf5bb;font-size:20px">$0</b></div>
+    <ul class="scnotes">
+      <li>您可以<b>无限次重玩</b>，直到拿到满意的额度再来保存。</li>
+      <li>保存后这笔优惠券会绑定到您的账号，可用于享受 <b>10% 折扣</b>。</li>
+      <li class="warn">一旦保存，之后再玩也无法更新或追加额度。</li>
+    </ul>
+    <div class="btnrow">
+      <button class="btn" id="btnScYes">确认保存</button>
+      <button class="btn ghost" id="btnScNo">再玩一局</button>
     </div>
   </div>
 </div>
@@ -881,10 +907,15 @@ function finish(){
 
   const sb = el('btnSave');
   if (sb){
-    sb.disabled = false;
-    sb.textContent = '保存优惠到我的账号';
     /* 教程局不发放优惠券，隐藏保存入口 */
     sb.style.display = st.tutorial ? 'none' : '';
+    if (couponLocked()){
+      sb.disabled = true;
+      sb.textContent = '优惠券已保存，无法更改';
+    } else {
+      sb.disabled = false;
+      sb.textContent = '保存优惠到我的账号';
+    }
   }
 
   el('rHits').textContent = st.hits;
@@ -2356,6 +2387,13 @@ window.CSRegisterCouponBridge = function (fn){
 };
 
 /* 同一局只允许提交一次（清缓存可绕过，仅作基础限制） */
+function couponLocked(){
+  try { return localStorage.getItem('cs_coupon_locked') === '1'; } catch (e){ return false; }
+}
+function couponLock(){
+  try { localStorage.setItem('cs_coupon_locked', '1'); } catch (e){}
+}
+
 function couponAlreadySaved(id){
   try {
     const arr = JSON.parse(localStorage.getItem('cs_coupon_saved') || '[]');
@@ -2397,7 +2435,9 @@ async function handleSaveCoupon(){
   try {
     await fn(payload);
     markCouponSaved(st.sessionId);
+    couponLock();
     btn.textContent = '已保存 ✓';
+    btn.disabled = true;
     showToast('优惠券已保存到你的账号', 'green', 2.6);
   } catch (err){
     console.error('[CS Coupon] 保存失败', err);
@@ -2409,6 +2449,23 @@ async function handleSaveCoupon(){
 
 el('btnSave').addEventListener('click', e => {
   e.stopPropagation();
+  if (couponLocked()){
+    showToast('优惠券已保存，无法更改', '', 2.6);
+    return;
+  }
+  const kept = st.endOK ? st.total : Math.floor((st.total * CFG.failKeep) / 5) * 5;
+  el('scTotal').textContent = '$' + kept;
+  el('saveBox').classList.add('on');
+});
+
+el('btnScNo').addEventListener('click', e => {
+  e.stopPropagation();
+  el('saveBox').classList.remove('on');
+});
+
+el('btnScYes').addEventListener('click', e => {
+  e.stopPropagation();
+  el('saveBox').classList.remove('on');
   handleSaveCoupon();
 });
 
@@ -2440,6 +2497,11 @@ requestAnimationFrame(loop);
      避免玩家用 ?dev=1&alt=60 跳过整个收集阶段直接着陆。 */
   if (location.protocol !== 'file:') return;
   startGame(q.has('tut'));
+  /* 本地调试：直接弹出保存确认框 */
+  if (q.has('savebox')){
+    el('scTotal').textContent = '$385';
+    el('saveBox').classList.add('on');
+  }
   if (q.get('alt')) st.h = parseFloat(q.get('alt'));
   if (q.get('t')){ st.time = parseFloat(q.get('t')); st.nextGift = 0.2; }
   if (q.get('px')) st.px = parseFloat(q.get('px'));
