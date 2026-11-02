@@ -1166,9 +1166,9 @@ function render(dt){
 function drawAttitude(){
   if (st.mode === 'menu') return;
 
-  const R = 50;
-  const cx = 26 + R;
-  const cy = H - 26 - R;
+  const R = Math.max(58, Math.min(76, Math.round(Math.min(W, H) * 0.085)));
+  const cx = 28 + R;
+  const cy = H - 28 - R;
 
   /* 基准 -3°（下滑道），操作时在 ±5° 内变化；
      滚转取雪橇本身的视觉倾角 0.22 rad ≈ 12.6°，方向与机身相反 */
