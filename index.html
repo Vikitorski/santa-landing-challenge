@@ -53,22 +53,18 @@
   .ils{position:absolute;display:flex;flex-direction:column;align-items:center;gap:7px}
   .ils-cap{font-family:var(--mono);font-size:9px;letter-spacing:.24em;color:var(--dim)}
 
-  /* 垂直速度表（737 样式） */
-  .vsi{position:absolute;right:92px;top:50%;transform:translateY(-50%);
-    width:64px;height:64px;border-radius:50%;
-    border:1px solid rgba(130,180,230,.42);background:rgba(6,12,22,.82)}
-  .vsi-tick{position:absolute;width:4px;height:4px;border-radius:50%;
-    background:rgba(190,215,240,.8);transform:translate(-50%,-50%)}
-  .vsi-tick.zero{width:6px;height:6px;background:#eaf4ff}
-  .vsi-tick.big{width:5px;height:5px;background:rgba(234,244,255,.95)}
-  /* 指针：从圆心向外，带一小段反向配重 */
-  .vsi-needle{position:absolute;left:50%;top:50%;width:24px;height:2.5px;
+  /* 垂直速度带（737 PFD 样式） */
+  .vsi{position:absolute;right:92px;top:50%;transform:translateY(-50%)}
+  .vsi-track{position:relative;width:26px;height:220px;border-radius:5px;
+    border:1px solid rgba(130,180,230,.30);background:rgba(6,12,22,.72);
+    overflow:hidden}
+  .vsi-tick{position:absolute;left:0;width:7px;height:1px;
+    background:rgba(190,215,240,.75);transform:translateY(-50%)}
+  .vsi-tick.zero{width:11px;background:#eaf4ff}
+  .vsi-tick.big{width:9px;background:rgba(234,244,255,.9)}
+  .vsi-ptr{position:absolute;left:5px;width:16px;height:3px;
     background:#ffffff;border-radius:1px;
-    transform-origin:0 50%;transform:translateY(-50%) rotate(180deg)}
-  .vsi-needle::after{content:'';position:absolute;right:100%;top:0;
-    width:6px;height:2.5px;background:#ffffff;border-radius:1px}
-  .vsi-needle::before{content:'';position:absolute;left:-2px;top:-2px;
-    width:6px;height:6px;border-radius:50%;background:#ffffff}
+    transform:translateY(-50%);box-shadow:0 0 6px rgba(255,255,255,.5)}
 
   .ils-v{right:26px;top:50%;transform:translateY(-50%)}
   .ils-v .track{position:relative;overflow:hidden;width:52px;height:220px;
@@ -253,8 +249,9 @@
     .stat .v{font-size:16px}
     .stat .v em{font-size:9px}
     .stat .v.sm{font-size:9.5px;letter-spacing:.05em;padding-top:3px}
-    .vsi{right:56px;width:48px;height:48px}
-    .vsi-needle{width:17px}
+    .vsi{right:56px}
+    .vsi-track{width:20px;height:150px}
+    .vsi-ptr{width:13px;left:4px}
     .ils-v{right:8px}
     .ils-v .track{width:38px;height:150px}
     .ils-h{bottom:58px}
@@ -296,15 +293,16 @@
     <div class="stat"><span class="k">PHASE</span><span class="v sm" id="hPhase">COLLECT</span></div>
   </div>
 
-  <!-- 垂直速度表：仿 737 VSI，0 位在 9 点，满刻度 ±6000 fpm 落在 3 点 -->
+  <!-- 垂直速度带：仿 737 PFD，0 在中间，满刻度 ±6000 在上下两端 -->
   <div class="vsi" id="vsi">
-    <i class="vsi-tick zero" style="left:8px;top:32px"></i>
-    <i class="vsi-tick" style="left:15px;top:15px"></i>
-    <i class="vsi-tick big" style="left:32px;top:8px"></i>
-    <i class="vsi-tick big" style="left:56px;top:32px"></i>
-    <i class="vsi-tick" style="left:15px;top:49px"></i>
-    <i class="vsi-tick big" style="left:32px;top:56px"></i>
-    <div class="vsi-needle" id="vsiNeedle"></div>
+    <div class="vsi-track" id="vsiTrack">
+      <i class="vsi-tick big" style="top:0%"></i>
+      <i class="vsi-tick" style="top:25%"></i>
+      <i class="vsi-tick zero" style="top:50%"></i>
+      <i class="vsi-tick" style="top:75%"></i>
+      <i class="vsi-tick big" style="top:100%"></i>
+      <div class="vsi-ptr" id="vsiPtr"></div>
+    </div>
   </div>
 
   <div class="ils ils-v">
@@ -2051,17 +2049,15 @@ function syncHUD(force){
   el('hAlt').innerHTML = Math.max(0, Math.round(st.h)) + '<em>FT</em>';
 
   /* 垂直速度：正为爬升、负为下降，单位 ft/min */
-  /* 垂直速度指针：0 位在 9 点(270°)，满刻度 ±6000 fpm 转到 3 点(90°)，扫过 180° */
-  const vsNeedle = el('vsiNeedle');
-  if (vsNeedle){
+  /* 垂直速度带指针：0 在中间，±6000 落在上下两端，前 2000 占四分之一 */
+  const vsPtr = el('vsiPtr');
+  if (vsPtr){
     const vsFpm = (st.vy * 3.28084 - sinkRate()) * 60;
     const n = clamp(vsFpm / 6000, -1, 1);
-    /* 737 的刻度是非线性的：前 2000 占 90°，后 4000 挤在另外 90° 里 */
     const a = Math.abs(n);
     const mapped = a <= 1 / 3 ? a * 1.5 : 0.5 + (a - 1 / 3) * 0.75;
-    const ang = 180 + Math.sign(n) * mapped * 180;
-    vsNeedle.style.transform = 'translateY(-50%) rotate(' + ang.toFixed(1) + 'deg)';
-
+    const top = 50 - Math.sign(n) * mapped * 50;
+    vsPtr.style.top = top.toFixed(1) + '%';
   }
 
   const wkt = Math.abs(st.windX) * 1.944;
