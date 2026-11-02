@@ -152,9 +152,10 @@
   }
 
   /* ---------- 覆盖层 ---------- */
-  .overlay{position:fixed;inset:0;display:none;align-items:center;justify-content:center;
-    background:radial-gradient(ellipse at 50% 38%,rgba(8,16,32,.44),rgba(2,5,10,.82) 76%);
-    backdrop-filter:blur(2px);-webkit-backdrop-filter:blur(2px);z-index:20;padding:22px}
+  .overlay{position:fixed;inset:0;display:none;align-items:flex-start;justify-content:center;
+    overflow-y:auto;padding-top:22px;
+    background:radial-gradient(ellipse at 50% 38%,rgba(8,16,32,.26),rgba(2,5,10,.60) 76%);
+    z-index:20;padding:22px}
   .overlay.on{display:flex}
 
   .card{width:min(560px,100%);max-height:92vh;overflow-y:auto;padding:34px 32px 28px;
@@ -319,7 +320,7 @@
     <div class="sub">Silent Night Approach · 仪表进近<br>收集礼物、保持下滑道、成功着陆，赢取圣诞优惠</div>
 
     <div class="rules">
-      <div class="rule"><span class="n">1</span><div class="tx"><b>收集礼物。</b>风雪中撞击飞来的礼物盒与气球，随机获得 $15 – $100 优惠券，累计上限 <b>$600</b>。</div></div>
+      <div class="rule"><span class="n">1</span><div class="tx"><b>收集礼物。</b>风雪中撞击飞来的礼物盒与气球，随机获得 $15 – $100 优惠券，<b>不设上限</b>，撞得越多拿得越多。</div></div>
       <div class="rule"><span class="n">2</span><div class="tx"><b>切入进近。</b>礼物停发后，用右侧 G/S 与下方 LOC 把洋红菱形拉回中心，瞄准跑道上那组大白块。左侧 PAPI 灯偏高变白、偏低变红。</div></div>
       <div class="rule"><span class="n">3</span><div class="tx"><b>500 英尺生死线。</b>低于 500 FT 后进入严格判定，任一指针偏离超过 <b>1 个点</b>即判定不稳定进近。撑到 100 FT 后只要落在跑道道面内，就算着陆成功。</div></div>
       <div class="rule"><span class="n">4</span><div class="tx"><b>结算。</b>成功着陆保留全部优惠券；进近失败仅保留 <b>50%</b>（向下取整到 $5）。</div></div>
@@ -413,13 +414,13 @@ const CFG = {
   vertMax  : 6.6,    // 垂直最大速度 m/s (≈21 ft/s)
   windLat  : 9.6,    // 横向风峰值 m/s
   windVert : 1.55,   // 垂直风峰值 m/s
-  giftGapA : 0.50,   // 礼物生成间隔下限 s
-  giftGapB : 0.82,   // 礼物生成间隔上限 s
+  giftGapA : 0.38,   // 礼物生成间隔下限 s
+  giftGapB : 0.63,   // 礼物生成间隔上限 s
   giftStop : 470,    // 低于该高度停止生成礼物 ft
   catchDz  : 70,     // 判定距离 m（礼物飞到雪橇跟前才判）
   catchX   : 200,    // 横向容差 px
   catchY   : 150,    // 纵向容差 px
-  maxCoupon: 600,
+  maxCoupon: Infinity,   // 不设上限
   failKeep : 0.5,
   graceT   : 0.80,   // 进入 500ft 后的判定宽限 s
 };
@@ -695,7 +696,7 @@ const TUT_STEPS = [
   { h:2150, tag:'3 / 5', title:'爬升与下降',
     body:'按 <b>↓</b> 键爬升，<b>↑</b> 键下降。触屏时<b>向下拉 = 爬升</b>，向上拉 = 下降。' },
   { h:1950, tag:'4 / 5', title:'撞上去，拿优惠券',
-    body:'把雪橇对准飞来的礼物盒和气球，<b>直接撞过去</b>。每撞到一个都有优惠券，累计最高 $600。' },
+    body:'把雪橇对准飞来的礼物盒和气球，<b>直接撞过去</b>。每撞到一个都有优惠券，撞得越多拿得越多。' },
   { h:1600, tag:'5 / 6', title:'自由练习',
     body:'继续收集礼物。同时留意右侧 <b>G/S</b> 和下方 <b>LOC</b> 两个洋红菱形指针，别让它们偏太远。' },
   { h:1000, tag:'6 / 6', title:'判定标准', flash:true,
@@ -744,6 +745,7 @@ function startGame(tutorial){
   el('menu').classList.remove('on');
   el('result').classList.remove('on');
   el('hud').style.zIndex = '';
+  el('hud').style.filter = '';
   el('hud').classList.add('on');
   document.querySelectorAll('.pop').forEach(n => n.remove());
   hideTutor();
@@ -786,8 +788,10 @@ function finish(){
   if (st.endOK){
     el('hud').classList.remove('on');
   } else {
-    /* 失败时把 HUD 留在上面，玩家能看到到底是哪个指针偏了 */
-    el('hud').style.zIndex = 21;
+    /* 失败时保留 HUD，但压在结算层下面：GS/LOC 透过半透明背景仍可见，
+       又不会盖住卡片里的按钮 */
+    el('hud').style.zIndex = 18;
+    el('hud').style.filter = 'brightness(1.55) drop-shadow(0 2px 10px rgba(0,0,0,.9))';
   }
   el('result').classList.add('on');
 
@@ -1595,7 +1599,7 @@ function drawSleigh(){
 
   ctx.save();
   ctx.translate(bx, by + bob);
-  ctx.rotate(st.bank * 0.16);
+  ctx.rotate(st.bank * 0.22);
   ctx.scale(scale, scale);
 
   drawDeer(-62, -42, -1, bob2);
@@ -2174,7 +2178,7 @@ el('btnTutorial').addEventListener('click', e => { e.stopPropagation(); startGam
    ── 后端必须自己做的校验（前端防不住） ────────────────────────────────
    1. sessionId 一次性：同一个 id 只能成功入账一次
    2. durationMs 合理性：低于 40 秒直接拒绝（脚本刷的）
-   3. total 上限：必须 <= 600，别信前端传来的数字
+   3. total 上限：前端已不设限，后端仍应配一个业务可承受的封顶值
    4. 绑定用户身份（手机号 / openid），限制每人参与次数
    5. 券码由服务端生成，前端只负责展示
 
