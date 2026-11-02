@@ -1170,9 +1170,10 @@ function drawAttitude(){
   const cx = 26 + R;
   const cy = H - 26 - R;
 
-  /* 基准 -3°（下滑道），操作时在 ±12° 内变化；滚转最大 ±35° */
-  const pitchDeg = -3 + st.pitch * 12;
-  const rollRad  = st.bank * 35 * Math.PI / 180;
+  /* 基准 -3°（下滑道），操作时在 ±5° 内变化；
+     滚转取雪橇本身的视觉倾角 0.22 rad ≈ 12.6°，方向与机身相反 */
+  const pitchDeg = -3 + st.pitch * 5;
+  const rollRad  = -st.bank * 12.6 * Math.PI / 180;
   const pxPerDeg = R / 22;
 
   ctx.save();
