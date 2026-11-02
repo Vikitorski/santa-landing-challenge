@@ -274,7 +274,6 @@
 
   <div class="box hud-tr">
     <div class="stat"><span class="k">ALT</span><span class="v" id="hAlt">2000<em>FT</em></span></div>
-    <div class="stat"><span class="k">V/S</span><span class="v sm" id="hVs">0<em>FPM</em></span></div>
     <div class="stat"><span class="k">PHASE</span><span class="v sm" id="hPhase">COLLECT</span></div>
   </div>
 
@@ -407,17 +406,16 @@ const CFG = {
   checkAlt : 500,    // 稳定进近判定高度 ft
   rwyFar   : 3300,   // 跑道末端距接地区 m（航向台位置）
   cutoffAlt: 100,    // 判定窗口下沿 ft（以下视为已建立，不再判定）
-  sinkHi   : 12.8,   // 下降率 ft/s（145 节 × 3° 下滑）
-  sinkLo   : 12.8,   // 下降率 ft/s
+  sinkHi   : 40,     // 高空下降率 ft/s
+  sinkLo   : 22,     // 低空下降率 ft/s
   latAcc   : 105,    // 横向加速度 m/s²
   latMax   : 31,     // 横向最大速度 m/s
   vertAcc  : 26,     // 垂直加速度 m/s²
-  vertMax  : 3.4,    // 向上最大速度 m/s（对应约 -100 FPM）
-  vertDown : 2.2,    // 向下最大速度 m/s（对应约 -1200 FPM）
+  vertMax  : 6.6,    // 垂直最大速度 m/s (≈21 ft/s)
   windLat  : 9.6,    // 横向风峰值 m/s
   windVert : 1.55,   // 垂直风峰值 m/s
-  giftGapA : 0.88,   // 礼物生成间隔下限 s
-  giftGapB : 1.45,   // 礼物生成间隔上限 s
+  giftGapA : 0.38,   // 礼物生成间隔下限 s
+  giftGapB : 0.63,   // 礼物生成间隔上限 s
   giftStop : 470,    // 低于该高度停止生成礼物 ft
   catchDz  : 70,     // 判定距离 m（礼物飞到雪橇跟前才判）
   catchX   : 200,    // 横向容差 px
@@ -897,7 +895,7 @@ function update(dt){
   /* ---- 输入 → 速度 ---- */
   const { ix, iy } = (st.mode === 'play') ? inputVec() : { ix:0, iy:0 };
   const tgtVx = ix * CFG.latMax;
-  const tgtVy = iy >= 0 ? iy * CFG.vertMax : iy * CFG.vertDown;
+  const tgtVy = iy * CFG.vertMax;
   const kx = 1 - Math.exp(-dt * 9.5);
   const ky = 1 - Math.exp(-dt * 9.5);
   st.vx = lerp(st.vx, tgtVx, kx);
@@ -2023,14 +2021,6 @@ function syncHUD(force){
   el('hAlt').innerHTML = Math.max(0, Math.round(st.h)) + '<em>FT</em>';
 
   /* 垂直速度：正为爬升、负为下降，单位 ft/min */
-  /* st.vy 单位 m/s，sinkRate() 单位 ft/s，先统一再换算成 ft/min */
-  const vsFpm = Math.round((st.vy * 3.28084 - sinkRate()) * 60);
-  const vsEl = el('hVs');
-  if (vsEl){
-    vsEl.innerHTML = (vsFpm > 0 ? '+' : '') + vsFpm + '<em>FPM</em>';
-    vsEl.style.color = vsFpm > 150 ? '#5cf5bb' : (vsFpm < -150 ? '#ffb36b' : '');
-  }
-
   const wkt = Math.abs(st.windX) * 1.944;
   const wh  = el('hWind');
   wh.innerHTML = '<i>' + (st.windX >= 0 ? '▶' : '◀') + '</i><b>' + Math.round(wkt) + '</b><u>KT</u>';
