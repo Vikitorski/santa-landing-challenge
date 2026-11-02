@@ -53,17 +53,22 @@
   .ils{position:absolute;display:flex;flex-direction:column;align-items:center;gap:7px}
   .ils-cap{font-family:var(--mono);font-size:9px;letter-spacing:.24em;color:var(--dim)}
 
-  /* 垂直速度表 */
+  /* 垂直速度表（737 样式） */
   .vsi{position:absolute;right:92px;top:50%;transform:translateY(-50%);
     width:64px;height:64px;border-radius:50%;
-    border:1px solid rgba(120,170,220,.26);background:rgba(10,18,32,.55)}
+    border:1px solid rgba(130,180,230,.42);background:rgba(6,12,22,.82)}
   .vsi-tick{position:absolute;width:4px;height:4px;border-radius:50%;
-    background:rgba(160,190,220,.5);transform:translate(-50%,-50%)}
-  .vsi-needle{position:absolute;left:50%;top:50%;width:25px;height:2px;
-    background:#eaf4ff;border-radius:1px;
+    background:rgba(190,215,240,.8);transform:translate(-50%,-50%)}
+  .vsi-tick.zero{width:6px;height:6px;background:#eaf4ff}
+  .vsi-tick.big{width:5px;height:5px;background:rgba(234,244,255,.95)}
+  /* 指针：从圆心向外，带一小段反向配重 */
+  .vsi-needle{position:absolute;left:50%;top:50%;width:24px;height:2.5px;
+    background:#ffffff;border-radius:1px;
     transform-origin:0 50%;transform:translateY(-50%) rotate(180deg)}
-  .vsi-needle::after{content:'';position:absolute;left:-3px;top:-2px;
-    width:6px;height:6px;border-radius:50%;background:#eaf4ff}
+  .vsi-needle::after{content:'';position:absolute;right:100%;top:0;
+    width:6px;height:2.5px;background:#ffffff;border-radius:1px}
+  .vsi-needle::before{content:'';position:absolute;left:-2px;top:-2px;
+    width:6px;height:6px;border-radius:50%;background:#ffffff}
 
   .ils-v{right:26px;top:50%;transform:translateY(-50%)}
   .ils-v .track{position:relative;overflow:hidden;width:52px;height:220px;
@@ -249,7 +254,7 @@
     .stat .v em{font-size:9px}
     .stat .v.sm{font-size:9.5px;letter-spacing:.05em;padding-top:3px}
     .vsi{right:56px;width:48px;height:48px}
-    .vsi-needle{width:19px}
+    .vsi-needle{width:17px}
     .ils-v{right:8px}
     .ils-v .track{width:38px;height:150px}
     .ils-h{bottom:58px}
@@ -291,11 +296,14 @@
     <div class="stat"><span class="k">PHASE</span><span class="v sm" id="hPhase">COLLECT</span></div>
   </div>
 
-  <!-- 垂直速度表：仿真空速表，指针在 0 位水平向左，爬升上扬、下降下垂 -->
+  <!-- 垂直速度表：仿 737 VSI，0 位在 9 点，满刻度 ±6000 fpm 落在 3 点 -->
   <div class="vsi" id="vsi">
-    <i class="vsi-tick" style="left:7px;top:50%"></i>
-    <i class="vsi-tick" style="left:50%;top:7px"></i>
-    <i class="vsi-tick" style="left:50%;bottom:7px"></i>
+    <i class="vsi-tick zero" style="left:8px;top:32px"></i>
+    <i class="vsi-tick" style="left:15px;top:15px"></i>
+    <i class="vsi-tick big" style="left:32px;top:8px"></i>
+    <i class="vsi-tick big" style="left:56px;top:32px"></i>
+    <i class="vsi-tick" style="left:15px;top:49px"></i>
+    <i class="vsi-tick big" style="left:32px;top:56px"></i>
     <div class="vsi-needle" id="vsiNeedle"></div>
   </div>
 
@@ -2043,12 +2051,17 @@ function syncHUD(force){
   el('hAlt').innerHTML = Math.max(0, Math.round(st.h)) + '<em>FT</em>';
 
   /* 垂直速度：正为爬升、负为下降，单位 ft/min */
-  /* 垂直速度指针：0 位在左，±2000 fpm 对应上下各 90° */
+  /* 垂直速度指针：0 位在 9 点(270°)，满刻度 ±6000 fpm 转到 3 点(90°)，扫过 180° */
   const vsNeedle = el('vsiNeedle');
   if (vsNeedle){
     const vsFpm = (st.vy * 3.28084 - sinkRate()) * 60;
-    const ang = 180 - clamp(vsFpm / 2000, -1, 1) * 90;
+    const n = clamp(vsFpm / 6000, -1, 1);
+    /* 737 的刻度是非线性的：前 2000 占 90°，后 4000 挤在另外 90° 里 */
+    const a = Math.abs(n);
+    const mapped = a <= 1 / 3 ? a * 1.5 : 0.5 + (a - 1 / 3) * 0.75;
+    const ang = 180 + Math.sign(n) * mapped * 180;
     vsNeedle.style.transform = 'translateY(-50%) rotate(' + ang.toFixed(1) + 'deg)';
+
   }
 
   const wkt = Math.abs(st.windX) * 1.944;
