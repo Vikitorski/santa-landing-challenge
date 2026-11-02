@@ -188,6 +188,8 @@
     transition:transform .12s,box-shadow .2s}
   .btn:hover{transform:translateY(-1px);box-shadow:0 18px 40px -14px rgba(60,230,168,1)}
   .btn:active{transform:translateY(1px) scale(.99)}
+  .btnrow{display:flex;gap:10px;margin-top:4px}
+  .btnrow .btn{margin-top:0}
   .btn.ghost{background:transparent;border:1px solid rgba(120,170,220,.35);color:var(--ice);
     box-shadow:none;margin-top:10px}
   .btn.ghost:hover{border-color:rgba(120,170,220,.7)}
@@ -346,7 +348,10 @@
       <div><span class="k">MAX DEV</span><span class="v" id="rDev">0.00</span></div>
     </div>
 
-    <button class="btn" id="btnRetry">再飞一次 &nbsp;›</button>
+    <div class="btnrow">
+      <button class="btn" id="btnRetry">再飞一次 &nbsp;›</button>
+      <button class="btn ghost" id="btnMenu">返回主菜单</button>
+    </div>
   </div>
 </div>
 
@@ -720,7 +725,7 @@ function startGame(tutorial){
   const isTut = !!tutorial;
   Object.assign(st, {
     mode:'play', h: isTut ? 2400 : CFG.startAlt, px:0, py:0, vx:0, vy:0,
-    tutorial: isTut, tutIdx: 0, tutFlashAll: false,
+    tutorial: isTut, tutIdx: 0, tutFlashAll: false, failFlash: null,
     time:0, coupons:[], total:0, hits:0, misses:0,
     gifts:[], parts:[], pops:[], bank:0, pitch:0,
     camX:0, camY:0, shake:0, nextGift:1.6,
@@ -729,6 +734,7 @@ function startGame(tutorial){
   });
   el('menu').classList.remove('on');
   el('result').classList.remove('on');
+  el('hud').style.zIndex = '';
   el('hud').classList.add('on');
   document.querySelectorAll('.pop').forEach(n => n.remove());
   hideTutor();
@@ -741,6 +747,8 @@ function failApproach(reason){
   if (st.failed) return;
   st.failed = true;
   st.failMsg = reason;
+  /* 失败的那个指针一直闪，直到结算 */
+  st.failFlash = (reason === 'loc' || reason === 'gs') ? reason : null;
   st.endOK = false;
   st.endT = 0;
   st.mode = 'ending';
@@ -765,7 +773,13 @@ function finish(){
   st.mode = 'result';
   document.querySelectorAll('.ils').forEach(n => n.classList.remove('flash'));
   const w = el('devWarn'); if (w) w.classList.remove('on');
-  el('hud').classList.remove('on');
+  const tst = el('toast'); if (tst) tst.classList.remove('on');   /* 别和结算标题叠在一起 */
+  if (st.endOK){
+    el('hud').classList.remove('on');
+  } else {
+    /* 失败时把 HUD 留在上面，玩家能看到到底是哪个指针偏了 */
+    el('hud').style.zIndex = 21;
+  }
   el('result').classList.add('on');
 
   const raw = st.total;
@@ -779,7 +793,7 @@ function finish(){
     el('rSub').textContent = st.endOK
       ? '你已掌握左右、上下和 1 个点的判定标准。教程局不发放优惠券，去挑战正式进近吧。'
       : '偏差超过 1 个点。回到中心，慢慢来，再试一次就好。';
-    el('btnRetry').textContent = '返回主界面';
+    el('btnRetry').textContent = '再练一次';
   } else {
   el('rEyebrow').textContent = st.endOK ? 'APPROACH COMPLETE · RWY 18 · LANDED' : 'APPROACH TERMINATED · GO AROUND';
   el('rVerdict').textContent = st.endOK ? 'PERFECT LANDING!' : 'UNSTABLE APPROACH!';
@@ -790,7 +804,7 @@ function finish(){
      : st.failMsg === 'loc' ? 'Santa drifted off the centreline below 500 ft. Try again.'
      : st.failMsg === 'gs'  ? 'Santa lost the glide path below 500 ft. Try again.'
      : 'Santa, you missed the landing! Try again.');
-    el('btnRetry').textContent = '再来一次';
+    el('btnRetry').textContent = '再飞一次';
   }
 
   if (st.tutorial){
@@ -1999,7 +2013,9 @@ function syncHUD(force){
   const gsPtr = el('gsPtr');
   const gsClamped = clamp(gsDot, -2.15, 2.15);
   gsPtr.style.transform = 'translateY(' + (gsClamped * gsDotPx).toFixed(1) + 'px)';
-  const gsOver = Math.abs(gsDot) > 1;
+  const inWindow = st.h <= CFG.checkAlt && st.h > CFG.cutoffAlt;
+  const warnTh = inWindow ? 0.75 : 1.0;
+  const gsOver = Math.abs(gsDot) > warnTh;
   gsPtr.className = 'ptr' + (gsOver ? ' warn' : '') + (st.checkOn && gsOver ? ' hot' : '');
   el('gsVal').textContent = gsDot.toFixed(1);
 
@@ -2010,7 +2026,7 @@ function syncHUD(force){
   const locPtr = el('locPtr');
   const locClamped = clamp(locDot, -2.15, 2.15);
   locPtr.style.transform = 'translateX(' + (-locClamped * locDotPx).toFixed(1) + 'px)';
-  const locOver = Math.abs(locDot) > 1;
+  const locOver = Math.abs(locDot) > warnTh;
   locPtr.className = 'ptr' + (locOver ? ' warn' : '') + (st.checkOn && locOver ? ' hot' : '');
 
   /* --- 允许区间带（±1 dot） --- */
@@ -2023,10 +2039,11 @@ function syncHUD(force){
   locBand.style.width = (locDotPx * 2) + 'px';
   locBand.style.borderColor = st.checkOn ? 'rgba(60,230,168,.45)' : 'rgba(60,230,168,.22)';
 
-  /* --- 偏离提醒：1000ft 以下，只要超过 1 个点就闪对应指示器并出文字 --- */
-  const alertOn = st.mode === 'play' && st.h <= 1000;
-  const locFlash = alertOn && (locOver || st.tutFlashAll);
-  const gsFlash  = alertOn && (gsOver  || st.tutFlashAll);
+  /* --- 偏离提醒：1000ft 以下、100ft 以上才提示；失败后出问题的指针一直闪 --- */
+  const alertOn = st.mode === 'play' && st.h <= 1000 && st.h > CFG.cutoffAlt;
+  const failFlash = st.failFlash;
+  const locFlash = failFlash === 'loc' || (alertOn && (locOver || st.tutFlashAll));
+  const gsFlash  = failFlash === 'gs'  || (alertOn && (gsOver  || st.tutFlashAll));
 
   const boxLoc = document.querySelector('.ils-h');
   const boxGs  = document.querySelector('.ils-v');
@@ -2035,7 +2052,7 @@ function syncHUD(force){
 
   const warn = el('devWarn');
   if (warn){
-    const show = alertOn && (locOver || gsOver);
+    const show = alertOn && (locOver || gsOver) && !failFlash;
     if (show !== st._warnOn){ st._warnOn = show; warn.classList.toggle('on', show); }
     if (show){
       const msg = (locOver && gsOver) ? 'LOC / GS 偏离' : (locOver ? 'LOC 偏离' : 'GS 偏离');
@@ -2098,8 +2115,11 @@ el('btnStart').addEventListener('click', e => { e.stopPropagation(); startGame(f
 el('btnTutorial').addEventListener('click', e => { e.stopPropagation(); startGame(true); });
 el('btnRetry').addEventListener('click', e => {
   e.stopPropagation();
-  if (st.tutorial) showMenu();
-  else startGame(false);
+  startGame(st.tutorial);
+});
+el('btnMenu').addEventListener('click', e => {
+  e.stopPropagation();
+  showMenu();
 });
 
 resize();
