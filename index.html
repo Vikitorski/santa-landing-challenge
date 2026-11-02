@@ -53,6 +53,18 @@
   .ils{position:absolute;display:flex;flex-direction:column;align-items:center;gap:7px}
   .ils-cap{font-family:var(--mono);font-size:9px;letter-spacing:.24em;color:var(--dim)}
 
+  /* 垂直速度表 */
+  .vsi{position:absolute;right:92px;top:50%;transform:translateY(-50%);
+    width:64px;height:64px;border-radius:50%;
+    border:1px solid rgba(120,170,220,.26);background:rgba(10,18,32,.55)}
+  .vsi-tick{position:absolute;width:4px;height:4px;border-radius:50%;
+    background:rgba(160,190,220,.5);transform:translate(-50%,-50%)}
+  .vsi-needle{position:absolute;left:50%;top:50%;width:25px;height:2px;
+    background:#eaf4ff;border-radius:1px;
+    transform-origin:0 50%;transform:translateY(-50%) rotate(180deg)}
+  .vsi-needle::after{content:'';position:absolute;left:-3px;top:-2px;
+    width:6px;height:6px;border-radius:50%;background:#eaf4ff}
+
   .ils-v{right:26px;top:50%;transform:translateY(-50%)}
   .ils-v .track{position:relative;overflow:hidden;width:52px;height:220px;
     border:1px solid var(--line);border-radius:8px;
@@ -236,6 +248,8 @@
     .stat .v{font-size:16px}
     .stat .v em{font-size:9px}
     .stat .v.sm{font-size:9.5px;letter-spacing:.05em;padding-top:3px}
+    .vsi{right:56px;width:48px;height:48px}
+    .vsi-needle{width:19px}
     .ils-v{right:8px}
     .ils-v .track{width:38px;height:150px}
     .ils-h{bottom:58px}
@@ -275,6 +289,14 @@
   <div class="box hud-tr">
     <div class="stat"><span class="k">ALT</span><span class="v" id="hAlt">2000<em>FT</em></span></div>
     <div class="stat"><span class="k">PHASE</span><span class="v sm" id="hPhase">COLLECT</span></div>
+  </div>
+
+  <!-- 垂直速度表：仿真空速表，指针在 0 位水平向左，爬升上扬、下降下垂 -->
+  <div class="vsi" id="vsi">
+    <i class="vsi-tick" style="left:7px;top:50%"></i>
+    <i class="vsi-tick" style="left:50%;top:7px"></i>
+    <i class="vsi-tick" style="left:50%;bottom:7px"></i>
+    <div class="vsi-needle" id="vsiNeedle"></div>
   </div>
 
   <div class="ils ils-v">
@@ -2021,6 +2043,14 @@ function syncHUD(force){
   el('hAlt').innerHTML = Math.max(0, Math.round(st.h)) + '<em>FT</em>';
 
   /* 垂直速度：正为爬升、负为下降，单位 ft/min */
+  /* 垂直速度指针：0 位在左，±2000 fpm 对应上下各 90° */
+  const vsNeedle = el('vsiNeedle');
+  if (vsNeedle){
+    const vsFpm = (st.vy * 3.28084 - sinkRate()) * 60;
+    const ang = 180 - clamp(vsFpm / 2000, -1, 1) * 90;
+    vsNeedle.style.transform = 'translateY(-50%) rotate(' + ang.toFixed(1) + 'deg)';
+  }
+
   const wkt = Math.abs(st.windX) * 1.944;
   const wh  = el('hWind');
   wh.innerHTML = '<i>' + (st.windX >= 0 ? '▶' : '◀') + '</i><b>' + Math.round(wkt) + '</b><u>KT</u>';
