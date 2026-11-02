@@ -733,6 +733,8 @@ function startGame(tutorial){
   Object.assign(st, {
     mode:'play', h: isTut ? 2400 : CFG.startAlt, px:0, py:0, vx:0, vy:0,
     tutorial: isTut, tutIdx: 0, tutFlashAll: false, failFlash: null,
+    sessionId: 'cs-' + Date.now().toString(36) + '-' + Math.random().toString(36).slice(2, 10),
+    startedAt: Date.now(),
     time:0, coupons:[], total:0, hits:0, misses:0,
     gifts:[], parts:[], pops:[], bank:0, pitch:0,
     camX:0, camY:0, shake:0, nextGift:1.6,
@@ -2131,47 +2133,53 @@ el('btnTutorial').addEventListener('click', e => { e.stopPropagation(); startGam
 /* ═══════════════════════════════════════════════════════════════════════
    【对接说明】保存优惠券
    ───────────────────────────────────────────────────────────────────────
-   点「保存优惠到我的账号」时，本页会把这一局的成绩打包成 payload，
-   然后依次寻找外部接入的保存函数：
+   接入方只需要做一件事：在页面里调用一次 CSRegisterCouponBridge，
+   把「怎么保存」告诉本页。
 
-     1) window.CSCouponBridge.save(payload)   ← 推荐，接入方实现
-     2) window.onSaveCoupon(payload)          ← 兼容写法
+     在页面里加一段脚本（注意别写成一整对标签，会截断本文件的 script）：
+       CSRegisterCouponBridge(function (payload) {
+         return fetch('/api/coupon/save', {
+           method: 'POST',
+           headers: { 'Content-Type': 'application/json' },
+           body: JSON.stringify(payload)
+         }).then(r => { if (!r.ok) throw new Error('save failed'); });
+       });
 
-   两个都找不到时，只打一条 console.warn，不报错，页面照常可用。
+   · 注册一次即锁定，之后无法再次注册，也无法从控制台替换掉。
+   · 返回 Promise 时本页会等它结束；resolve 显示「已保存 ✓」，
+     reject 显示「保存失败，请稍后重试」。
+   · 想直接跳转绑定页，在函数里 location.href 即可。
+   · 没注册时点按钮只会打一条 console.warn，页面照常可用。
 
    ── payload 结构 ──────────────────────────────────────────────────────
    {
-     ok:       true | false,   // 是否成功着陆（失败时优惠券按 50% 折算）
-     coupons:  [100, 40, 25],  // 券面额列表，已按 ok 折算并向下取整到 $5
-     total:    165,            // 合计金额（折算后，和结算页显示的一致）
-     rawTotal: 330,            // 折算前的金额
-     hits:     12,             // 撞中的礼物数
-     misses:   48,             // 错过的礼物数
-     maxDev:   0.31,           // 判定窗口内的最大偏差（单位：点）
-     tutorial: false,          // 是否教程局（教程局不会进到这里）
-     issuedAt: "2026-11-02T01:28:00.000Z",
-     version:  "1.0"
+     ok:         true | false,   // 是否成功着陆（失败局按 50% 折算）
+     coupons:    [60, 40, 25],   // 券面额，已折算并向下取整到 $5
+     total:      125,            // 合计，和结算页显示一致
+     rawTotal:   250,            // 折算前
+     hits:       13,
+     misses:     49,
+     maxDev:     0.11,           // 判定窗口内最大偏差（点）
+     tutorial:   false,
+
+     sessionId:  "cs-m3k9x2-a7f2b1",     // 本局唯一 id
+     startedAt:  "2026-11-02T01:28:00Z",
+     durationMs: 68240,                  // 正常一局 60~80 秒
+     frames:     4094,                   // 实际推进帧数
+
+     issuedAt:   "2026-11-02T01:29:08Z",
+     version:    "1.1"
    }
 
-   ── 接入方需要做的 ────────────────────────────────────────────────────
-   · 在页面里（本文件之前或之后都行）定义：
-       window.CSCouponBridge = {
-         save(payload){
-           // 1. 校验 payload.total 是否 <= 600
-           // 2. 跳转登录 / 微信授权，拿到用户身份
-           // 3. 调后端接口把 coupons 写入该账号（后端要做一次性 token 防重放）
-           // 4. resolve 表示成功，本页会显示「已保存」
-           return fetch('/api/coupon/save', {...}).then(r => r.json());
-         }
-       };
-   · 返回 Promise 时，本页会等它结束再给用户反馈；
-     抛错或 reject，本页提示「保存失败，请稍后重试」。
-   · 想自定义跳转，直接在 save() 里 location.href 到绑定页即可。
+   ── 后端必须自己做的校验（前端防不住） ────────────────────────────────
+   1. sessionId 一次性：同一个 id 只能成功入账一次
+   2. durationMs 合理性：低于 40 秒直接拒绝（脚本刷的）
+   3. total 上限：必须 <= 600，别信前端传来的数字
+   4. 绑定用户身份（手机号 / openid），限制每人参与次数
+   5. 券码由服务端生成，前端只负责展示
 
-   ── 重要提醒 ──────────────────────────────────────────────────────────
-   本页不保存任何数据、不发任何请求。所有落库、鉴权、防作弊都在后端完成。
-   前端拿到的 total 可以被篡改（浏览器控制台能改内存），
-   务必在后端重新校验上限，并用一次性 token 限制重复提交。
+   前端的注册锁、localStorage 去重只是提高门槛，
+   浏览器控制台改 st.total 这种事永远防不住，务必以后端为准。
    ═══════════════════════════════════════════════════════════════════════ */
 
 function buildCouponPayload(){
@@ -2183,17 +2191,50 @@ function buildCouponPayload(){
   const total = st.endOK ? raw : Math.floor((raw * CFG.failKeep) / 5) * 5;
 
   return {
-    ok:       !!st.endOK,
-    coupons:  coupons,
-    total:    total,
-    rawTotal: raw,
-    hits:     st.hits,
-    misses:   st.misses,
-    maxDev:   +st.maxDev.toFixed(2),
-    tutorial: !!st.tutorial,
-    issuedAt: new Date().toISOString(),
-    version:  '1.0'
+    ok:         !!st.endOK,
+    coupons:    coupons,
+    total:      total,
+    rawTotal:   raw,
+    hits:       st.hits,
+    misses:     st.misses,
+    maxDev:     +st.maxDev.toFixed(2),
+    tutorial:   !!st.tutorial,
+    /* —— 以下四项给后端判断"是不是真玩过这一局" —— */
+    sessionId:  st.sessionId,
+    startedAt:  new Date(st.startedAt).toISOString(),
+    durationMs: Date.now() - st.startedAt,           // 正常一局 60~80 秒，明显偏短就是脚本
+    frames:     Math.round(st.time * 60),
+    issuedAt:   new Date().toISOString(),
+    version:    '1.1'
   };
+}
+
+/* 保存回调由接入方注册，注册后即锁定，之后无法被覆盖，
+   玩家不能在控制台塞一个假的 save 函数进来。 */
+let couponBridge = null;
+let couponBridgeLocked = false;
+
+window.CSRegisterCouponBridge = function (fn){
+  if (couponBridgeLocked) return false;
+  if (typeof fn !== 'function') return false;
+  couponBridge = fn;
+  couponBridgeLocked = true;
+  return true;
+};
+
+/* 同一局只允许提交一次（清缓存可绕过，仅作基础限制） */
+function couponAlreadySaved(id){
+  try {
+    const arr = JSON.parse(localStorage.getItem('cs_coupon_saved') || '[]');
+    return arr.indexOf(id) >= 0;
+  } catch (e){ return false; }
+}
+function markCouponSaved(id){
+  try {
+    const arr = JSON.parse(localStorage.getItem('cs_coupon_saved') || '[]');
+    if (arr.indexOf(id) < 0) arr.push(id);
+    localStorage.setItem('cs_coupon_saved', JSON.stringify(arr.slice(-30)));
+  } catch (e){}
 }
 
 async function handleSaveCoupon(){
@@ -2202,15 +2243,15 @@ async function handleSaveCoupon(){
     return;
   }
 
+  if (couponAlreadySaved(st.sessionId)){
+    showToast('这一局已经保存过了', '', 2.4);
+    return;
+  }
+
   const payload = buildCouponPayload();
+  const fn = couponBridge;
 
-  const bridge = window.CSCouponBridge;
-  const legacy = window.onSaveCoupon;
-  const fn = (bridge && typeof bridge.save === 'function')
-    ? bridge.save.bind(bridge)
-    : (typeof legacy === 'function' ? legacy : null);
-
-  if (!fn){
+  if (typeof fn !== 'function'){
     console.warn('[CS Coupon] 未接入保存功能。payload =', payload);
     showToast('保存功能尚未接入', '', 2.6);
     return;
@@ -2222,6 +2263,7 @@ async function handleSaveCoupon(){
 
   try {
     await fn(payload);
+    markCouponSaved(st.sessionId);
     btn.textContent = '已保存 ✓';
     showToast('优惠券已保存到你的账号', 'green', 2.6);
   } catch (err){
