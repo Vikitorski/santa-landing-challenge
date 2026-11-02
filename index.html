@@ -58,13 +58,14 @@
   .vsi-track{position:relative;width:26px;height:220px;border-radius:5px;
     border:1px solid rgba(130,180,230,.30);background:rgba(6,12,22,.72);
     overflow:hidden}
-  .vsi-tick{position:absolute;left:0;width:7px;height:1px;
+  .vsi-tick{position:absolute;right:0;width:7px;height:1px;
     background:rgba(190,215,240,.75);transform:translateY(-50%)}
   .vsi-tick.zero{width:11px;background:#eaf4ff}
   .vsi-tick.big{width:9px;background:rgba(234,244,255,.9)}
-  .vsi-ptr{position:absolute;left:5px;width:16px;height:3px;
-    background:#ffffff;border-radius:1px;
-    transform:translateY(-50%);box-shadow:0 0 6px rgba(255,255,255,.5)}
+  .vsi-ptr{position:absolute;left:50%;width:11px;height:7px;
+    background:#ffffff;border-radius:1.5px;
+    transform:translate(-50%,-50%);
+    box-shadow:0 0 7px rgba(255,255,255,.65)}
 
   .ils-v{right:26px;top:50%;transform:translateY(-50%)}
   .ils-v .track{position:relative;overflow:hidden;width:52px;height:220px;
@@ -251,7 +252,7 @@
     .stat .v.sm{font-size:9.5px;letter-spacing:.05em;padding-top:3px}
     .vsi{right:56px}
     .vsi-track{width:20px;height:150px}
-    .vsi-ptr{width:13px;left:4px}
+    .vsi-ptr{width:9px;height:6px}
     .ils-v{right:8px}
     .ils-v .track{width:38px;height:150px}
     .ils-h{bottom:58px}
@@ -1167,8 +1168,10 @@ function drawAttitude(){
   if (st.mode === 'menu') return;
 
   const R = Math.max(58, Math.min(76, Math.round(Math.min(W, H) * 0.085)));
+  const portrait = H > W * 1.2;          // 手机竖屏
   const cx = 28 + R;
-  const cy = H - 28 - R;
+  /* 竖屏底部中间是 LOC 条，姿态仪要抬上去让开 */
+  const cy = H - 28 - R - (portrait ? 146 : 0);
 
   /* 基准 -3°（下滑道），操作时在 ±5° 内变化；
      滚转取雪橇本身的视觉倾角 0.22 rad ≈ 12.6°，方向与机身相反 */
