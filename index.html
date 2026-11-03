@@ -2398,7 +2398,8 @@ function syncHUD(force){
   const gsClamped = clamp(gsDot, -2.15, 2.15);
   gsPtr.style.transform = 'translateY(' + (gsClamped * gsDotPx).toFixed(1) + 'px)';
   const inWindow = st.h <= CFG.checkAlt && st.h > CFG.cutoffAlt;
-  const warnTh = inWindow ? 0.75 : 1.0;
+  /* 偏离半个点就开始告警，判定仍然是 1 个点 */
+  const warnTh = 0.5;
   const gsOver = Math.abs(gsDot) > warnTh;
   gsPtr.className = 'ptr' + (gsOver ? ' warn' : '') + (st.checkOn && gsOver ? ' hot' : '');
   el('gsVal').textContent = gsDot.toFixed(1);
