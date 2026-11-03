@@ -54,8 +54,15 @@
   .ils-cap{font-family:var(--mono);font-size:9px;letter-spacing:.24em;color:var(--dim)}
 
   /* 顶部积分进度条 */
-  .ptsbar{position:absolute;left:50%;top:68px;transform:translateX(-50%);
+  .ptsbar{position:absolute;left:50%;top:88px;transform:translateX(-50%);
     width:min(340px,54vw);pointer-events:none}
+  .pts-marks{position:relative;height:13px;margin-bottom:5px}
+  .pm{position:absolute;top:0;transform:translateX(-50%);white-space:nowrap;
+    font-family:var(--mono);font-size:8.5px;letter-spacing:.05em;
+    color:rgba(190,215,240,.88);transition:color .3s,text-shadow .3s}
+  .pm.last{transform:translateX(-100%)}
+  .pm.hit{color:#5cf5bb;text-shadow:0 0 8px rgba(92,245,187,.75)}
+  .pm.hit.top{color:#ffd166;text-shadow:0 0 10px rgba(255,209,102,.85)}
   .pts-track{position:relative;height:9px;border-radius:5px;overflow:hidden;
     background:rgba(8,14,24,.9);border:1px solid rgba(150,195,240,.55);box-shadow:0 2px 14px rgba(0,0,0,.55)}
   .pts-fill{height:100%;width:0;border-radius:4px;
@@ -269,7 +276,7 @@
     .box{padding:8px 10px;border-radius:8px}
     .hud-tl{top:8px;left:8px;gap:12px}
     .hud-tr{top:8px;right:8px;gap:12px}
-    .ptsbar{top:56px;width:min(260px,74vw)}
+    .ptsbar{top:78px;width:min(260px,74vw)}
     .stat{min-width:54px;gap:2px}
     .stat .k{font-size:7.5px;letter-spacing:.16em}
     .stat .v{font-size:16px}
@@ -309,14 +316,23 @@
 <!-- ============ HUD ============ -->
 <div id="hud">
   <div class="ptsbar" id="ptsBar">
+    <div class="pts-marks" id="ptsMarks">
+      <span class="pm" data-at="300"  style="left:30%">3% off</span>
+      <span class="pm" data-at="500"  style="left:50%">5% off</span>
+      <span class="pm" data-at="800"  style="left:80%">8% off</span>
+      <span class="pm last" data-at="1000" style="left:100%">10% off</span>
+    </div>
     <div class="pts-track">
       <div class="pts-fill" id="ptsFill"></div>
+      <i class="pts-mark" style="left:30%"></i>
       <i class="pts-mark" style="left:50%"></i>
+      <i class="pts-mark" style="left:80%"></i>
+      <i class="pts-mark" style="left:100%"></i>
     </div>
     <div class="pts-meta">
-      <span>500 · 5%</span>
+      <span>0</span>
       <span class="now"><b id="ptsNow">0</b> 积分</span>
-      <span>1000 · 10%</span>
+      <span>1000</span>
     </div>
   </div>
   <div class="box hud-tl">
@@ -388,7 +404,7 @@
       <div class="rule"><span class="n">1</span><div class="tx"><b>收集礼物。</b>风雪中撞击飞来的礼物盒与气球，每撞一个获得 <b>25 – 150 积分</b>，撞得越多拿得越多。</div></div>
       <div class="rule"><span class="n">2</span><div class="tx"><b>切入进近。</b>礼物停发后，用右侧 G/S 与下方 LOC 把洋红菱形拉回中心，瞄准跑道上那组大白块。左侧 PAPI 灯偏高变白、偏低变红。</div></div>
       <div class="rule"><span class="n">3</span><div class="tx"><b>500 英尺生死线。</b>低于 500 FT 后进入严格判定，任一指针偏离超过 <b>1 个点</b>即判定不稳定进近。撑到 100 FT 后只要落在跑道道面内，就算着陆成功。</div></div>
-      <div class="rule"><span class="n">4</span><div class="tx"><b>结算。</b>成功着陆保留全部积分；进近失败仅保留 <b>50%</b>。<b>500 分</b>解锁 5% 折扣，<b>1000 分</b>解锁 10% 优惠券。</div></div>
+      <div class="rule"><span class="n">4</span><div class="tx"><b>结算。</b>成功着陆保留全部积分；进近失败仅保留 <b>50%</b>。<b>300 / 500 / 800 / 1000 分</b>分别解锁 <b>3% / 5% / 8% / 10%</b> 折扣。</div></div>
       <div class="rule touchonly"><span class="n">5</span><div class="tx"><b>触屏操作。</b>手指在屏幕上滑动控制雪橇：左右滑转向，上下滑爬升或下降，松手即停。</div></div>
     </div>
 
@@ -435,7 +451,7 @@
     <div class="vsub">当前积分 <b id="scTotal" style="color:#5cf5bb;font-size:20px">0</b></div>
     <ul class="scnotes">
       <li>您可以<b>无限次重玩</b>，直到拿到满意的积分再来保存。</li>
-      <li>500 分解锁 <b>5% 折扣</b>，1000 分解锁 <b>10% 优惠券</b>。</li>
+      <li>积分越高折扣越大：<b>300 分 3%</b>、<b>500 分 5%</b>、<b>800 分 8%</b>、<b>1000 分 10%</b>。</li>
       <li class="warn">一旦保存，之后再玩也无法更新或追加积分。</li>
     </ul>
     <div class="btnrow">
@@ -503,8 +519,12 @@ const CFG = {
   catchX   : 200,    // 横向容差 px
   catchY   : 150,    // 纵向容差 px
   maxPoints: 1000,       // 积分上限（对应 10% 优惠券）
-  tier1    : 500,        // 5% 折扣所需积分
-  tier2    : 1000,       // 10% 优惠券所需积分
+  tiers    : [           // 里程碑：积分门槛 → 折扣
+    { at: 300,  off: 3  },
+    { at: 500,  off: 5  },
+    { at: 800,  off: 8  },
+    { at: 1000, off: 10 },
+  ],
   failKeep : 0.5,
   graceT   : 0.80,   // 进入 500ft 后的判定宽限 s
 };
@@ -518,11 +538,60 @@ const DENOMS = [
   { v: 100, w: 6  },
 ];
 const DENOM_TOTAL = DENOMS.reduce((s, d) => s + d.w, 0);
-/* 积分对应的折扣档位 */
+/* ---------- 里程碑礼花 ---------- */
+let sparks = [];
+
+function firework(x, y, scale){
+  const n = Math.round(16 + scale * 26);
+  const palette = scale >= 0.99
+    ? ['#ffd166','#ffb36b','#fff1c9','#5cf5bb']
+    : ['#5cf5bb','#7dffd0','#eaf4ff','#ffd166'];
+  for (let i = 0; i < n; i++){
+    const a  = rand(0, 6.283);
+    const sp = rand(70, 210) * (0.55 + scale * 0.75);
+    sparks.push({
+      x, y,
+      vx: Math.cos(a) * sp,
+      vy: Math.sin(a) * sp - 55,
+      life: 0,
+      max: rand(0.55, 1.05),
+      color: palette[randi(0, palette.length - 1)],
+      size: rand(1.4, 3.2) * (0.65 + scale * 0.55)
+    });
+  }
+}
+
+function updateSparks(dt){
+  if (!sparks.length) return;
+  for (const p of sparks){
+    p.life += dt;
+    p.x += p.vx * dt;
+    p.y += p.vy * dt;
+    p.vy += 260 * dt;
+    p.vx *= 0.985;
+    p.vy *= 0.985;
+  }
+  sparks = sparks.filter(p => p.life < p.max);
+}
+
+function drawSparks(){
+  if (!sparks.length) return;
+  for (const p of sparks){
+    const k = 1 - p.life / p.max;
+    ctx.globalAlpha = Math.max(0, k * k);
+    ctx.fillStyle = p.color;
+    ctx.beginPath();
+    ctx.arc(p.x, p.y, p.size * (0.6 + k * 0.6), 0, 6.283);
+    ctx.fill();
+  }
+  ctx.globalAlpha = 1;
+}
+
+/* 积分对应的折扣档位（取已达到的最高一档） */
 function discountOf(p){
-  if (p >= CFG.tier2) return 10;
-  if (p >= CFG.tier1) return 5;
-  return 0;
+  let d = 0;
+  for (const t of CFG.tiers) if (p >= t.at) d = t.off;
+  return d;
 }
 
 function rollPoints(){
@@ -796,8 +865,8 @@ const TUT_STEPS = [
     body:'把雪橇对准飞来的礼物盒和气球，<b>直接撞过去</b>。每撞到一个都有积分，撞得越多拿得越多。' },
   { h:1600, tag:'5 / 6', title:'自由练习',
     body:'继续收集礼物。同时留意右侧 <b>G/S</b> 和下方 <b>LOC</b> 两个洋红菱形指针，别让它们偏太远。' },
-  { h:1000, tag:'6 / 6', title:'判定标准', flash:true,
-    body:'<b>500 尺内</b>保持 <b>GS 和 LOC</b> 在 <b>1 个点</b>之内，否则不稳定进近。' },
+  { h:1000, tag:'6 / 6', title:'判定标准与积分', flash:true,
+    body:'<b>500 尺内</b>保持 <b>GS 和 LOC</b> 在 <b>1 个点</b>之内，否则不稳定进近。<br>撞礼物攒积分，<b>300 / 500 / 800 / 1000</b> 分分别换 <b>3% / 5% / 8% / 10%</b> 折扣。' },
   { h:500,  tag:'判定',  title:'稳定进近开始 · 500 FT', flash:false,
     body:'对准跑道上那组<b>白色大块</b>，稳稳落下去。' },
   { h:130,  tag:'落地',  title:'通过判定',
@@ -928,7 +997,7 @@ function finish(){
   el('rTotal').textContent = kept;
   const dsc = discountOf(kept);
   el('rNote').textContent = st.endOK
-    ? (dsc >= 10 ? '达到 1000 分 — 解锁 10% 优惠券' : dsc >= 5 ? '达到 500 分 — 解锁 5% 折扣' : '未达 500 分 — 本局没有折扣')
+    ? (dsc > 0 ? '已达到 ' + dsc + '% 折扣档' : '未达 300 分 — 本局没有折扣')
     : '进近失败 — 积分按 ' + Math.round(CFG.failKeep*100) + '% 折算';
 
   const box = el('rCoupons');
@@ -1192,6 +1261,16 @@ function collectGift(g, sx, sy){
   const before = st.points;
   st.points = Math.min(CFG.maxPoints, st.points + g.value);
   const gained = st.points - before;
+
+  /* 跨过里程碑就放一朵，序号越大越炸 */
+  for (let i = 0; i < CFG.tiers.length; i++){
+    const t = CFG.tiers[i];
+    if (before < t.at && st.points >= t.at){
+      const r = el('ptsBar').getBoundingClientRect();
+      firework(r.left + r.width * (t.at / CFG.maxPoints), r.bottom + 10,
+               i / (CFG.tiers.length - 1));
+    }
+  }
   if (gained > 0) st.coupons.push(gained);
 
   const col = HUES[g.hue % HUES.length];
@@ -1215,6 +1294,7 @@ function collectGift(g, sx, sy){
    ══════════════════════════════════════════════════════════════ */
 function render(dt){
   updateCamera();
+  updateSparks(dt || 0);
 
   const shx = st.shake ? rand(-st.shake, st.shake) : 0;
   const shy = st.shake ? rand(-st.shake, st.shake) : 0;
@@ -1235,6 +1315,7 @@ function render(dt){
   ctx.restore();
 
   drawAttitude();
+  drawSparks();
 
   if (st.mode === 'play' || st.mode === 'ending') syncHUD(false);
 }
@@ -2216,11 +2297,16 @@ function syncHUD(force){
     const pct = Math.min(100, (st.points / CFG.maxPoints) * 100);
     pf.style.width = pct.toFixed(1) + '%';
     pn.textContent = st.points;
-    pf.style.background = st.points >= CFG.tier2
+    pf.style.background = st.points >= 1000
       ? 'linear-gradient(90deg,#3ce6a8,#ffd166)'
-      : (st.points >= CFG.tier1
+      : (st.points >= 300
           ? 'linear-gradient(90deg,#3ce6a8,#7dffd0)'
           : 'linear-gradient(90deg,#2f6fae,#3ce6a8)');
+    document.querySelectorAll('#ptsMarks .pm').forEach(n => {
+      const at = +n.dataset.at;
+      n.classList.toggle('hit', st.points >= at);
+      n.classList.toggle('top', at >= 1000 && st.points >= at);
+    });
   }
   el('hAlt').innerHTML = Math.max(0, Math.round(st.h)) + '<em>FT</em>';
 
@@ -2559,6 +2645,7 @@ requestAnimationFrame(loop);
   if (location.protocol !== 'file:') return;
   startGame(q.has('tut'));
   /* 本地调试：直接弹出保存确认框 */
+  if (q.has('fw')){ firework(W * 0.62, 130, 1); }
   if (q.has('savebox')){
     el('scTotal').textContent = '$385';
     el('saveBox').classList.add('on');
