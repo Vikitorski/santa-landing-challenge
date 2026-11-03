@@ -547,7 +547,7 @@ const CFG = {
   latAcc   : 105,    // 横向加速度 m/s²
   latMax   : 31,     // 横向最大速度 m/s
   vertAcc  : 26,     // 垂直加速度 m/s²
-  vertMax  : 6.6,    // 垂直最大速度 m/s (≈21 ft/s)
+  vertMax  : 8.8,    // 向下最大速度 m/s，压杆更跟手
   windLat  : 9.6,    // 横向风峰值 m/s
   windVert : 1.55,   // 垂直风峰值 m/s
   giftGapA : 0.32,   // 礼物生成间隔下限 s
@@ -1127,7 +1127,8 @@ function update(dt){
   st.vyUp = vyUpMax;
   const tgtVy = iy >= 0 ? iy * vyUpMax : iy * CFG.vertMax;
   const kx = 1 - Math.exp(-dt * 9.5);
-  const ky = 1 - Math.exp(-dt * 14);
+  /* 向下压杆反应更快一些 */
+  const ky = 1 - Math.exp(-dt * (iy < 0 ? 19 : 14));
   st.vx = lerp(st.vx, tgtVx, kx);
   st.vy = lerp(st.vy, tgtVy, ky);
 
