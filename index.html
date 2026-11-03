@@ -53,6 +53,21 @@
   .ils{position:absolute;display:flex;flex-direction:column;align-items:center;gap:7px}
   .ils-cap{font-family:var(--mono);font-size:9px;letter-spacing:.24em;color:var(--dim)}
 
+  /* 顶部积分进度条 */
+  .ptsbar{position:absolute;left:50%;top:12px;transform:translateX(-50%);
+    width:min(340px,54vw);pointer-events:none}
+  .pts-track{position:relative;height:9px;border-radius:5px;overflow:hidden;
+    background:rgba(8,14,24,.88);border:1px solid rgba(120,170,220,.42)}
+  .pts-fill{height:100%;width:0;border-radius:4px;
+    background:linear-gradient(90deg,#2f6fae,#3ce6a8);
+    transition:width .22s ease,background .3s ease}
+  .pts-mark{position:absolute;top:-1px;width:1px;height:11px;
+    background:rgba(234,244,255,.55)}
+  .pts-meta{display:flex;justify-content:space-between;margin-top:5px;
+    font-family:var(--mono);font-size:9px;letter-spacing:.12em;color:var(--dim)}
+  .pts-meta .now{color:#cfe3f6}
+  .pts-meta .now b{color:#5cf5bb;font-size:11px;font-weight:700}
+
   /* 垂直速度带（737 PFD 样式） */
   .vsi{position:absolute;right:92px;top:50%;transform:translateY(-50%)}
   .vsi-track{position:relative;width:26px;height:220px;border-radius:5px;
@@ -292,9 +307,20 @@
 
 <!-- ============ HUD ============ -->
 <div id="hud">
+  <div class="ptsbar" id="ptsBar">
+    <div class="pts-track">
+      <div class="pts-fill" id="ptsFill"></div>
+      <i class="pts-mark" style="left:50%"></i>
+    </div>
+    <div class="pts-meta">
+      <span>500 · 5%</span>
+      <span class="now"><b id="ptsNow">0</b> 积分</span>
+      <span>1000 · 10%</span>
+    </div>
+  </div>
   <div class="box hud-tl">
     <div class="stat"><span class="k">GIFTS</span><span class="v" id="hGifts">0</span></div>
-    <div class="stat"><span class="k">COUPON</span><span class="v amber" id="hTotal">$0</span></div>
+    <div class="stat"><span class="k">POINTS</span><span class="v" id="hTotal">0</span></div>
     <div class="stat"><span class="k">WIND</span><span class="v sm" id="hWind"><i>▶</i><b>12</b><u>KT</u></span></div>
   </div>
 
@@ -358,10 +384,10 @@
     <div class="sub">Silent Night Approach · 仪表进近<br>收集礼物、保持下滑道、成功着陆，赢取圣诞优惠</div>
 
     <div class="rules">
-      <div class="rule"><span class="n">1</span><div class="tx"><b>收集礼物。</b>风雪中撞击飞来的礼物盒与气球，随机获得 $15 – $100 优惠券，<b>不设上限</b>，撞得越多拿得越多。</div></div>
+      <div class="rule"><span class="n">1</span><div class="tx"><b>收集礼物。</b>风雪中撞击飞来的礼物盒与气球，每撞一个获得 <b>25 – 150 积分</b>，撞得越多拿得越多。</div></div>
       <div class="rule"><span class="n">2</span><div class="tx"><b>切入进近。</b>礼物停发后，用右侧 G/S 与下方 LOC 把洋红菱形拉回中心，瞄准跑道上那组大白块。左侧 PAPI 灯偏高变白、偏低变红。</div></div>
       <div class="rule"><span class="n">3</span><div class="tx"><b>500 英尺生死线。</b>低于 500 FT 后进入严格判定，任一指针偏离超过 <b>1 个点</b>即判定不稳定进近。撑到 100 FT 后只要落在跑道道面内，就算着陆成功。</div></div>
-      <div class="rule"><span class="n">4</span><div class="tx"><b>结算。</b>成功着陆保留全部优惠券；进近失败仅保留 <b>50%</b>（向下取整到 $5）。</div></div>
+      <div class="rule"><span class="n">4</span><div class="tx"><b>结算。</b>成功着陆保留全部积分；进近失败仅保留 <b>50%</b>。<b>500 分</b>解锁 5% 折扣，<b>1000 分</b>解锁 10% 优惠券。</div></div>
       <div class="rule touchonly"><span class="n">5</span><div class="tx"><b>触屏操作。</b>手指在屏幕上滑动控制雪橇：左右滑转向，上下滑爬升或下降，松手即停。</div></div>
     </div>
 
@@ -379,8 +405,8 @@
 
     <div class="totalwrap">
       <div class="lab" id="rLab">TOTAL COUPON VALUE</div>
-      <div class="amt" id="rTotal">$0</div>
-      <div class="note" id="rNote">全部优惠券已存入账户</div>
+      <div class="amt" id="rTotal">0</div>
+      <div class="note" id="rNote">积分已记录</div>
     </div>
 
     <div class="coupons" id="rCoupons"></div>
@@ -405,11 +431,11 @@
   <div class="card">
     <div class="eyebrow">SAVE COUPONS</div>
     <div class="verdict ok">确认保存这笔优惠？</div>
-    <div class="vsub">当前额度 <b id="scTotal" style="color:#5cf5bb;font-size:20px">$0</b></div>
+    <div class="vsub">当前积分 <b id="scTotal" style="color:#5cf5bb;font-size:20px">0</b></div>
     <ul class="scnotes">
-      <li>您可以<b>无限次重玩</b>，直到拿到满意的额度再来保存。</li>
-      <li>保存后这笔优惠券会绑定到您的账号，可用于享受 <b>10% 折扣</b>。</li>
-      <li class="warn">一旦保存，之后再玩也无法更新或追加额度。</li>
+      <li>您可以<b>无限次重玩</b>，直到拿到满意的积分再来保存。</li>
+      <li>500 分解锁 <b>5% 折扣</b>，1000 分解锁 <b>10% 优惠券</b>。</li>
+      <li class="warn">一旦保存，之后再玩也无法更新或追加积分。</li>
     </ul>
     <div class="btnrow">
       <button class="btn" id="btnScYes">确认保存</button>
@@ -469,18 +495,20 @@ const CFG = {
   vertMax  : 6.6,    // 垂直最大速度 m/s (≈21 ft/s)
   windLat  : 9.6,    // 横向风峰值 m/s
   windVert : 1.55,   // 垂直风峰值 m/s
-  giftGapA : 0.38,   // 礼物生成间隔下限 s
-  giftGapB : 0.63,   // 礼物生成间隔上限 s
+  giftGapA : 0.32,   // 礼物生成间隔下限 s
+  giftGapB : 0.52,   // 礼物生成间隔上限 s
   giftStop : 470,    // 低于该高度停止生成礼物 ft
   catchDz  : 70,     // 判定距离 m（礼物飞到雪橇跟前才判）
   catchX   : 200,    // 横向容差 px
   catchY   : 150,    // 纵向容差 px
-  maxCoupon: Infinity,   // 不设上限
+  maxPoints: 1000,       // 积分上限（对应 10% 优惠券）
+  tier1    : 500,        // 5% 折扣所需积分
+  tier2    : 1000,       // 10% 优惠券所需积分
   failKeep : 0.5,
   graceT   : 0.80,   // 进入 500ft 后的判定宽限 s
 };
 
-/* 优惠券面额分布 */
+/* 积分档位分布 */
 const DENOMS = [
   { v: 15,  w: 30 },
   { v: 25,  w: 28 },
@@ -489,10 +517,23 @@ const DENOMS = [
   { v: 100, w: 6  },
 ];
 const DENOM_TOTAL = DENOMS.reduce((s, d) => s + d.w, 0);
-function rollCoupon(){
-  let r = Math.random() * DENOM_TOTAL;
-  for (const d of DENOMS){ if ((r -= d.w) <= 0) return d.v; }
-  return 15;
+/* 积分对应的折扣档位 */
+function discountOf(p){
+  if (p >= CFG.tier2) return 10;
+  if (p >= CFG.tier1) return 5;
+  return 0;
+}
+
+function rollPoints(){
+  /* 平均约 56 分；高分档刻意放宽，一局撞十几个就能摸到 500 */
+  const r = Math.random();
+  if (r < 0.05) return 150;
+  if (r < 0.12) return 100;
+  if (r < 0.24) return 80;
+  if (r < 0.42) return 60;
+  if (r < 0.64) return 45;
+  if (r < 0.84) return 35;
+  return 25;
 }
 
 /* ══════════════════════════════════════════════════════════════
@@ -507,7 +548,7 @@ const st = {
   vy        : 0,
   time      : 0,
   coupons   : [],
-  total     : 0,
+  points    : 0,
   hits      : 0,
   misses    : 0,
   gifts     : [],
@@ -750,8 +791,8 @@ const TUT_STEPS = [
     body:'按 <b>← →</b> 键，或在屏幕上<b>左右滑动</b>。把雪橇移到礼物所在的横向位置。' },
   { h:2150, tag:'3 / 5', title:'爬升与下降',
     body:'按 <b>↓</b> 键爬升，<b>↑</b> 键下降。触屏时<b>向下拉 = 爬升</b>，向上拉 = 下降。' },
-  { h:1950, tag:'4 / 5', title:'撞上去，拿优惠券',
-    body:'把雪橇对准飞来的礼物盒和气球，<b>直接撞过去</b>。每撞到一个都有优惠券，撞得越多拿得越多。' },
+  { h:1950, tag:'4 / 5', title:'撞上去，拿积分',
+    body:'把雪橇对准飞来的礼物盒和气球，<b>直接撞过去</b>。每撞到一个都有积分，撞得越多拿得越多。' },
   { h:1600, tag:'5 / 6', title:'自由练习',
     body:'继续收集礼物。同时留意右侧 <b>G/S</b> 和下方 <b>LOC</b> 两个洋红菱形指针，别让它们偏太远。' },
   { h:1000, tag:'6 / 6', title:'判定标准', flash:true,
@@ -791,7 +832,7 @@ function startGame(tutorial){
     tutorial: isTut, tutIdx: 0, tutFlashAll: false, failFlash: null,
     sessionId: 'cs-' + Date.now().toString(36) + '-' + Math.random().toString(36).slice(2, 10),
     startedAt: Date.now(),
-    time:0, coupons:[], total:0, hits:0, misses:0,
+    time:0, coupons:[], points:0, hits:0, misses:0,
     gifts:[], parts:[], pops:[], bank:0, pitch:0,
     camX:0, camY:0, shake:0, nextGift:1.6,
     checkOn:false, grace:0, failed:false, failMsg:'',
@@ -850,7 +891,7 @@ function finish(){
   }
   el('result').classList.add('on');
 
-  const raw = st.total;
+  const raw = st.points;
   const kept = st.endOK ? raw : Math.floor((raw * CFG.failKeep) / 5) * 5;
 
   if (st.tutorial){
@@ -879,14 +920,15 @@ function finish(){
     /* 教程局只是练习，不产生优惠券 */
     el('rLab').textContent = 'PRACTICE RUN';
     el('rTotal').textContent = '—';
-    el('rNote').textContent = '教程局不记录优惠券';
+    el('rNote').textContent = '教程局不记录积分';
     el('rCoupons').innerHTML = '';
   } else {
-  el('rLab').textContent = 'TOTAL COUPON VALUE';
-  el('rTotal').textContent = '$' + kept;
+  el('rLab').textContent = 'TOTAL POINTS';
+  el('rTotal').textContent = kept;
+  const dsc = discountOf(kept);
   el('rNote').textContent = st.endOK
-    ? '全部优惠券已存入账户，可组合使用'
-    : '进近失败 — 保留 ' + Math.round(CFG.failKeep*100) + '% 优惠券（已向下取整至 $5）';
+    ? (dsc >= 10 ? '达到 1000 分 — 解锁 10% 优惠券' : dsc >= 5 ? '达到 500 分 — 解锁 5% 折扣' : '未达 500 分 — 本局没有折扣')
+    : '进近失败 — 积分按 ' + Math.round(CFG.failKeep*100) + '% 折算';
 
   const box = el('rCoupons');
   box.innerHTML = '';
@@ -894,7 +936,7 @@ function finish(){
   list.forEach((v, i) => {
     const d = document.createElement('div');
     d.className = 'cp' + (st.endOK ? '' : ' dim');
-    d.textContent = '$' + v;
+    d.textContent = '+' + v;
     d.style.animationDelay = (i * 0.035) + 's';
     box.appendChild(d);
   });
@@ -1128,7 +1170,7 @@ function spawnGift(){
     z: Z - rand(760, 1150),
     type: isBalloon ? 'balloon' : 'box',
     hue: randi(0, 5),
-    value: rollCoupon(),
+    value: rollPoints(),
     done: false,
     anim: 0,
     spin: rand(0, 6.283),
@@ -1146,9 +1188,9 @@ function collectGift(g, sx, sy){
   g.ax = sx; g.ay = sy;
 
   st.hits++;
-  const before = st.total;
-  st.total = Math.min(CFG.maxCoupon, st.total + g.value);
-  const gained = st.total - before;
+  const before = st.points;
+  st.points = Math.min(CFG.maxPoints, st.points + g.value);
+  const gained = st.points - before;
   if (gained > 0) st.coupons.push(gained);
 
   const col = HUES[g.hue % HUES.length];
@@ -2165,7 +2207,20 @@ function syncHUD(force){
   const gsDot  = st.py / (Z * DOT_GS);
 
   el('hGifts').textContent = st.hits;
-  el('hTotal').textContent = '$' + st.total;
+  el('hTotal').textContent = st.points;
+
+  /* 积分进度条 */
+  const pf = el('ptsFill'), pn = el('ptsNow');
+  if (pf && pn){
+    const pct = Math.min(100, (st.points / CFG.maxPoints) * 100);
+    pf.style.width = pct.toFixed(1) + '%';
+    pn.textContent = st.points;
+    pf.style.background = st.points >= CFG.tier2
+      ? 'linear-gradient(90deg,#3ce6a8,#ffd166)'
+      : (st.points >= CFG.tier1
+          ? 'linear-gradient(90deg,#3ce6a8,#7dffd0)'
+          : 'linear-gradient(90deg,#2f6fae,#3ce6a8)');
+  }
   el('hAlt').innerHTML = Math.max(0, Math.round(st.h)) + '<em>FT</em>';
 
   /* 垂直速度：正为爬升、负为下降，单位 ft/min */
@@ -2345,11 +2400,11 @@ el('btnTutorial').addEventListener('click', e => { e.stopPropagation(); startGam
    5. 券码由服务端生成，前端只负责展示
 
    前端的注册锁、localStorage 去重只是提高门槛，
-   浏览器控制台改 st.total 这种事永远防不住，务必以后端为准。
+   浏览器控制台改 st.points 这种事永远防不住，务必以后端为准。
    ═══════════════════════════════════════════════════════════════════════ */
 
 function buildCouponPayload(){
-  const raw = st.total;
+  const raw = st.points;
   const list = st.coupons.slice().sort((a, b) => b - a);
   const coupons = st.endOK
     ? list
@@ -2457,8 +2512,8 @@ el('btnSave').addEventListener('click', e => {
     showToast('优惠券已保存，无法更改', '', 2.6);
     return;
   }
-  const kept = st.endOK ? st.total : Math.floor((st.total * CFG.failKeep) / 5) * 5;
-  el('scTotal').textContent = '$' + kept;
+  const kept = st.endOK ? st.points : Math.floor((st.points * CFG.failKeep) / 5) * 5;
+  el('scTotal').textContent = kept;
   el('saveBox').classList.add('on');
 });
 
@@ -2523,7 +2578,7 @@ requestAnimationFrame(loop);
     while ((st.mode === 'play' || st.mode === 'ending') && n < 8000){ update(1/60); n++; }
     document.title = [
       'mode=' + st.mode, 'h=' + st.h.toFixed(0), 'hits=' + st.hits,
-      'miss=' + st.misses, 'total=' + st.total, 'maxDev=' + st.maxDev.toFixed(2),
+      'miss=' + st.misses, 'total=' + st.points, 'maxDev=' + st.maxDev.toFixed(2),
       'fail=' + (st.failMsg || '-'), 'frames=' + n, 'ok=' + st.endOK
     ].join(' | ');
     return;
