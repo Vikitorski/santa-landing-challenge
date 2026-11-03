@@ -483,10 +483,13 @@
   <div class="card">
     <div class="eyebrow">SAVE COUPONS</div>
     <div class="verdict ok">确认保存这张优惠券？</div>
-    <div class="vsub">优惠券 <b id="scTotal" style="color:#5cf5bb;font-size:20px">0</b></div>
+    <div class="voucher on" id="scVoucher" style="margin:14px auto 4px">
+      <span class="voff" id="scVoff">5% OFF</span>
+      <span class="vsub2" id="scVsub">积分 0 兑换</span>
+    </div>
     <ul class="scnotes">
       <li>您可以<b>无限次重玩</b>，直到拿到满意的积分再来保存。</li>
-      <li>积分越高折扣越大：<b>300 分 3%</b>、<b>500 分 5%</b>、<b>800 分 8%</b>、<b>1000 分 10%</b>。</li>
+      <li>积分越高折扣越大：<b>300 分 3%</b>、<b>500 分 5%</b>、<b>700 分 7%</b>、<b>1000 分 10%</b>。</li>
       <li class="warn">一旦保存，之后再玩也无法更新或追加积分。</li>
     </ul>
     <div class="btnrow">
@@ -2650,7 +2653,18 @@ el('btnSave').addEventListener('click', e => {
     return;
   }
   const kept = st.endOK ? st.points : Math.floor((st.points * CFG.failKeep) / 5) * 5;
-  el('scTotal').textContent = kept;
+  const sVc = el('scVoucher'), sVoff = el('scVoff'), sVsub = el('scVsub');
+  if (sVc && sVoff){
+    const sd = discountOf(kept);
+    if (sd > 0){
+      sVc.style.display = '';
+      sVc.classList.toggle('gold', sd >= 10);
+      sVoff.textContent = sd + '% OFF';
+      sVsub.textContent = '积分 ' + kept + ' 兑换';
+    } else {
+      sVc.style.display = 'none';
+    }
+  }
   el('saveBox').classList.add('on');
 });
 
@@ -2697,7 +2711,8 @@ requestAnimationFrame(loop);
   /* 本地调试：直接弹出保存确认框 */
   if (q.has('fw')){ firework(W * 0.62, 130, 1); }
   if (q.has('savebox')){
-    el('scTotal').textContent = '$385';
+    if (el('scVoff')) el('scVoff').textContent = '7% OFF';
+    if (el('scVsub')) el('scVsub').textContent = '积分 720 兑换';
     el('saveBox').classList.add('on');
   }
   if (q.get('alt')) st.h = parseFloat(q.get('alt'));
