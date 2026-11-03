@@ -54,10 +54,10 @@
   .ils-cap{font-family:var(--mono);font-size:9px;letter-spacing:.24em;color:var(--dim)}
 
   /* 顶部积分进度条 */
-  .ptsbar{position:absolute;left:50%;top:12px;transform:translateX(-50%);
+  .ptsbar{position:absolute;left:50%;top:68px;transform:translateX(-50%);
     width:min(340px,54vw);pointer-events:none}
   .pts-track{position:relative;height:9px;border-radius:5px;overflow:hidden;
-    background:rgba(8,14,24,.88);border:1px solid rgba(120,170,220,.42)}
+    background:rgba(8,14,24,.9);border:1px solid rgba(150,195,240,.55);box-shadow:0 2px 14px rgba(0,0,0,.55)}
   .pts-fill{height:100%;width:0;border-radius:4px;
     background:linear-gradient(90deg,#2f6fae,#3ce6a8);
     transition:width .22s ease,background .3s ease}
@@ -269,6 +269,7 @@
     .box{padding:8px 10px;border-radius:8px}
     .hud-tl{top:8px;left:8px;gap:12px}
     .hud-tr{top:8px;right:8px;gap:12px}
+    .ptsbar{top:56px;width:min(260px,74vw)}
     .stat{min-width:54px;gap:2px}
     .stat .k{font-size:7.5px;letter-spacing:.16em}
     .stat .v{font-size:16px}
