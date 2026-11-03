@@ -1122,9 +1122,12 @@ function update(dt){
   /* ---- 输入 → 速度 ---- */
   const { ix, iy } = (st.mode === 'play') ? inputVec() : { ix:0, iy:0 };
   const tgtVx = ix * CFG.latMax;
-  const tgtVy = iy * CFG.vertMax;
+  /* 向上打满时下降率固定在 -100 fpm，随当前下沉率自动调整，手感始终一致 */
+  const vyUpMax = Math.max(2, (sinkRate() - 1.67) / 3.28084);
+  st.vyUp = vyUpMax;
+  const tgtVy = iy >= 0 ? iy * vyUpMax : iy * CFG.vertMax;
   const kx = 1 - Math.exp(-dt * 9.5);
-  const ky = 1 - Math.exp(-dt * 9.5);
+  const ky = 1 - Math.exp(-dt * 14);
   st.vx = lerp(st.vx, tgtVx, kx);
   st.vy = lerp(st.vy, tgtVy, ky);
 
@@ -1166,7 +1169,7 @@ function update(dt){
   st.camX = lerp(st.camX, st.px, ck);
   st.camY = lerp(st.camY, st.py, ck);
   st.bank = lerp(st.bank, clamp(st.vx / CFG.latMax, -1, 1), 1 - Math.exp(-dt * 6));
-  st.pitch = lerp(st.pitch, clamp(st.vy / CFG.vertMax, -1, 1), 1 - Math.exp(-dt * 6));
+  st.pitch = lerp(st.pitch, clamp(st.vy / (st.vyUp || CFG.vertMax), -1, 1), 1 - Math.exp(-dt * 9));
 
   /* ---- 礼物生成 ---- */
   if (st.mode === 'play' && st.h > CFG.giftStop){
