@@ -1125,7 +1125,9 @@ function update(dt){
   /* 向上打满时下降率固定在 -100 fpm，随当前下沉率自动调整，手感始终一致 */
   const vyUpMax = Math.max(2, (sinkRate() - 1.67) / 3.28084);
   st.vyUp = vyUpMax;
-  const tgtVy = iy >= 0 ? iy * vyUpMax : iy * CFG.vertMax;
+  /* 向下打满正好压在 VSI 最底端 -6000 fpm，同样随下沉率自适应 */
+  const vyDownMax = Math.max(2, (100 - sinkRate()) / 3.28084);
+  const tgtVy = iy >= 0 ? iy * vyUpMax : iy * vyDownMax;
   const kx = 1 - Math.exp(-dt * 9.5);
   /* 向下压杆反应更快一些 */
   const ky = 1 - Math.exp(-dt * (iy < 0 ? 19 : 14));
