@@ -1347,7 +1347,7 @@ function collectGift(g, sx, sy){
 
   const pop = document.createElement('div');
   pop.className = 'pop';
-  pop.textContent = gained > 0 ? '+$' + gained : 'MAX';
+  pop.textContent = gained > 0 ? '+' + gained : 'MAX';
   pop.style.left = sx + 'px';
   pop.style.top  = sy + 'px';
   if (gained <= 0) pop.style.color = '#3ce6a8';
@@ -2531,7 +2531,7 @@ el('btnTutorial').addEventListener('click', e => { e.stopPropagation(); startGam
    ── payload 结构 ──────────────────────────────────────────────────────
    {
      ok:         true | false,   // 是否成功着陆（失败局按 50% 折算）
-     coupons:    [60, 40, 25],   // 券面额，已折算并向下取整到 $5
+     coupons:    [60, 40, 25],   // 每个礼物实际到账的积分
      total:      125,            // 合计，和结算页显示一致
      rawTotal:   250,            // 折算前
      hits:       13,
