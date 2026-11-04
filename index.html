@@ -362,7 +362,7 @@
     </div>
     <div class="pts-meta">
       <span>0</span>
-      <span class="now"><b id="ptsNow">0</b> 积分</span>
+      <span class="now"><b id="ptsNow">0</b> PTS</span>
       <span>1000</span>
     </div>
   </div>
@@ -429,18 +429,18 @@
   <div class="card">
     <div class="eyebrow">COCKPIT SIMULATOR · HOLIDAY APPROACH</div>
     <h1>Santa Claus<br>Landing Challenge</h1>
-    <div class="sub">Silent Night Approach · 仪表进近<br>收集礼物、保持下滑道、成功着陆，赢取圣诞优惠</div>
+    <div class="sub">Silent Night Approach · Instrument Approach<br>Catch gifts, hold the glideslope, land safely — and earn your Christmas discount</div>
 
     <div class="rules">
-      <div class="rule"><span class="n">1</span><div class="tx"><b>收集礼物。</b>风雪中撞击飞来的礼物盒与气球，每撞一个获得 <b>25 – 150 积分</b>，撞得越多拿得越多。</div></div>
-      <div class="rule"><span class="n">2</span><div class="tx"><b>切入进近。</b>礼物停发后，用右侧 G/S 与下方 LOC 把洋红菱形拉回中心，瞄准跑道上那组大白块。左侧 PAPI 灯偏高变白、偏低变红。</div></div>
-      <div class="rule"><span class="n">3</span><div class="tx"><b>500 英尺生死线。</b>低于 500 FT 后进入严格判定，任一指针偏离超过 <b>1 个点</b>即判定不稳定进近。撑到 100 FT 后只要落在跑道道面内，就算着陆成功。</div></div>
-      <div class="rule"><span class="n">4</span><div class="tx"><b>结算。</b>成功着陆保留全部积分；进近失败仅保留 <b>50%</b>。<b>300 / 500 / 800 / 1000 分</b>分别解锁 <b>3% / 5% / 8% / 10%</b> 折扣。</div></div>
-      <div class="rule touchonly"><span class="n">5</span><div class="tx"><b>触屏操作。</b>手指在屏幕上滑动控制雪橇：左右滑转向，上下滑爬升或下降，松手即停。</div></div>
+      <div class="rule"><span class="n">1</span><div class="tx"><b>Catch gifts.</b> Fly through the gift boxes and balloons in the storm. Each one scores <b>25–150 points</b> — the more you catch, the more you earn.</div></div>
+      <div class="rule"><span class="n">2</span><div class="tx"><b>Capture the approach.</b> When the gifts stop, use the <b>G/S</b> pointer on the right and the <b>LOC</b> pointer below to bring the magenta diamonds back to centre, aiming at the big white blocks on the runway. The PAPI on the left turns white when you are high, red when low.</div></div>
+      <div class="rule"><span class="n">3</span><div class="tx"><b>The 500 ft gate.</b> Below <b>500 FT</b> the approach is judged strictly — drift more than <b>1 dot</b> on either pointer and it counts as unstable. Hold it together down to <b>100 FT</b>: as long as you touch down on the runway surface, you have landed.</div></div>
+      <div class="rule"><span class="n">4</span><div class="tx"><b>Results.</b> A successful landing keeps all your points; a failed approach keeps <b>50%</b>. <b>300 / 500 / 700 / 1000 points</b> unlock <b>3% / 5% / 7% / 10%</b> off.</div></div>
+      <div class="rule touchonly"><span class="n">5</span><div class="tx"><b>Touch controls.</b> Drag on the screen to steer: left and right to turn, up and down to climb or descend. Release to level off.</div></div>
     </div>
 
-    <button class="btn" id="btnStart">开始进近 &nbsp;›</button>
-    <button class="btn ghost" id="btnTutorial">新手教程</button>
+    <button class="btn" id="btnStart">START APPROACH &nbsp;›</button>
+    <button class="btn ghost" id="btnTutorial">TUTORIAL</button>
   </div>
 </div>
 
@@ -454,10 +454,10 @@
     <div class="totalwrap">
       <div class="lab" id="rLab">TOTAL COUPON VALUE</div>
       <div class="amt" id="rTotal">0</div>
-      <div class="note" id="rNote">积分已记录</div>
+      <div class="note" id="rNote">Points recorded</div>
       <div class="voucher" id="rVoucher">
         <span class="voff" id="rVoff">5% OFF</span>
-        <span class="vsub2" id="rVsub">积分 0</span>
+        <span class="vsub2" id="rVsub">0 pts</span>
       </div>
     </div>
 
@@ -470,11 +470,11 @@
     </div>
 
     <!-- 保存优惠：点击后交给外部接入方处理（见文件末尾 CSCouponBridge 对接说明） -->
-    <button class="btn save" id="btnSave">保存优惠券到我的账号</button>
+    <button class="btn save" id="btnSave">SAVE COUPON TO MY ACCOUNT</button>
 
     <div class="btnrow">
-      <button class="btn ghost" id="btnRetry">再飞一次</button>
-      <button class="btn ghost" id="btnMenu">返回主菜单</button>
+      <button class="btn ghost" id="btnRetry">FLY AGAIN</button>
+      <button class="btn ghost" id="btnMenu">MAIN MENU</button>
     </div>
   </div>
 </div>
@@ -482,19 +482,19 @@
 <div class="overlay" id="saveBox">
   <div class="card">
     <div class="eyebrow">SAVE COUPONS</div>
-    <div class="verdict ok">确认保存这张优惠券？</div>
+    <div class="verdict ok">Save this coupon?</div>
     <div class="voucher on" id="scVoucher" style="margin:14px auto 4px">
       <span class="voff" id="scVoff">5% OFF</span>
-      <span class="vsub2" id="scVsub">积分 0 兑换</span>
+      <span class="vsub2" id="scVsub">0 pts</span>
     </div>
     <ul class="scnotes">
-      <li>您可以<b>无限次重玩</b>，直到拿到满意的积分再来保存。</li>
-      <li>积分越高折扣越大：<b>300 分 3%</b>、<b>500 分 5%</b>、<b>700 分 7%</b>、<b>1000 分 10%</b>。</li>
-      <li class="warn">一旦保存，之后再玩也无法更新或追加积分。</li>
+      <li>You can <b>replay as many times as you like</b> until you are happy with your score.</li>
+      <li>The more points, the bigger the discount: <b>300 = 3%</b>, <b>500 = 5%</b>, <b>700 = 7%</b>, <b>1000 = 10%</b>.</li>
+      <li class="warn">Once saved, later runs cannot update or add to it.</li>
     </ul>
     <div class="btnrow">
-      <button class="btn" id="btnScYes">确认保存</button>
-      <button class="btn ghost" id="btnScNo">再玩一局</button>
+      <button class="btn" id="btnScYes">SAVE</button>
+      <button class="btn ghost" id="btnScNo">PLAY AGAIN</button>
     </div>
   </div>
 </div>
@@ -893,22 +893,22 @@ const el = id => document.getElementById(id);
 
 /* 新手教程的分步引导：按高度依次弹出，一直停在画面上直到下一步 */
 const TUT_STEPS = [
-  { h:2400, tag:'1 / 5', title:'欢迎来到新手教程',
-    body:'跟着屏幕上的提示走，每一步做到就自动进入下一步。现在先熟悉一下操控。' },
-  { h:2300, tag:'2 / 5', title:'左右移动 · 对准横向位置',
-    body:'按 <b>← →</b> 键，或在屏幕上<b>左右滑动</b>。把雪橇移到礼物所在的横向位置。' },
-  { h:2150, tag:'3 / 5', title:'爬升与下降',
-    body:'按 <b>↓</b> 键爬升，<b>↑</b> 键下降。触屏时<b>向下拉 = 爬升</b>，向上拉 = 下降。' },
-  { h:1950, tag:'4 / 5', title:'撞上去，拿积分',
-    body:'把雪橇对准飞来的礼物盒和气球，<b>直接撞过去</b>。每撞到一个都有积分，撞得越多拿得越多。' },
-  { h:1600, tag:'5 / 6', title:'自由练习',
-    body:'继续收集礼物。同时留意右侧 <b>G/S</b> 和下方 <b>LOC</b> 两个洋红菱形指针，别让它们偏太远。' },
-  { h:1000, tag:'6 / 6', title:'判定标准与积分', flash:true,
-    body:'<b>500 尺内</b>保持 <b>GS 和 LOC</b> 在 <b>1 个点</b>之内，否则不稳定进近。<br>撞礼物攒积分，<b>300 / 500 / 800 / 1000</b> 分分别换 <b>3% / 5% / 8% / 10%</b> 折扣。' },
-  { h:500,  tag:'判定',  title:'稳定进近开始 · 500 FT', flash:false,
-    body:'对准跑道上那组<b>白色大块</b>，稳稳落下去。' },
-  { h:130,  tag:'落地',  title:'通过判定',
-    body:'对准跑道道面，稳稳落下去。落在跑道外会算失败。' }
+  { h:2400, tag:'1 / 5', title:'Welcome to the tutorial',
+    body:'Follow the prompts on screen — each step advances automatically once you complete it. Let us start with the controls.' },
+  { h:2300, tag:'2 / 5', title:'Turning · line up sideways',
+    body:'Press <b>← →</b>, or <b>swipe left and right</b>. Move the sleigh to the gift’s horizontal position.' },
+  { h:2150, tag:'3 / 5', title:'Climb and descend',
+    body:'Press <b>↓</b> to climb and <b>↑</b> to descend. On touch, <b>drag down to climb</b> and drag up to descend.' },
+  { h:1950, tag:'4 / 5', title:'Hit it, score points',
+    body:'Line up with the incoming boxes and balloons and <b>fly straight through them</b>. Every hit scores points — the more you catch, the more you earn.' },
+  { h:1600, tag:'5 / 6', title:'Free practice',
+    body:'Keep collecting gifts, and watch the two magenta diamonds — <b>G/S</b> on the right and <b>LOC</b> below. Do not let them drift too far.' },
+  { h:1000, tag:'6 / 6', title:'Judging and points', flash:true,
+    body:'Below <b>500 FT</b>, keep <b>GS and LOC</b> within <b>1 dot</b> or it counts as unstable.<br>Gifts build points: <b>300 / 500 / 700 / 1000</b> unlock <b>3% / 5% / 7% / 10%</b> off.' },
+  { h:500,  tag:'CHECK', title:'Stable approach check · 500 FT', flash:false,
+    body:'Aim at the big <b>white blocks</b> on the runway and set it down smoothly.' },
+  { h:130,  tag:'LAND',  title:'Check passed',
+    body:'Aim at the runway surface and touch down. Landing off the runway counts as a miss.' }
 ];
 
 function showTutor(item){
@@ -953,7 +953,7 @@ function startGame(tutorial){
   el('hud').classList.add('on');
   document.querySelectorAll('.pop').forEach(n => n.remove());
   hideTutor();
-  if (isTut) showToast('新手教程开始', 'green', 2.0);
+  if (isTut) showToast('TUTORIAL START', 'green', 2.0);
   else showToast('COLLECT THE GIFTS', '', 2.2);
   syncHUD(true);
 }
@@ -1005,12 +1005,12 @@ function finish(){
   if (st.tutorial){
     hideTutor();
     el('rEyebrow').textContent = 'TUTORIAL COMPLETE';
-    el('rVerdict').textContent = st.endOK ? '教程完成' : '教程未通过';
+    el('rVerdict').textContent = st.endOK ? 'TUTORIAL COMPLETE' : 'TUTORIAL FAILED';
     el('rVerdict').className = 'verdict ' + (st.endOK ? 'ok' : 'bad');
     el('rSub').textContent = st.endOK
-      ? '你已掌握左右、上下和 1 个点的判定标准。教程局不发放优惠券，去挑战正式进近吧。'
-      : '偏差超过 1 个点。回到中心，慢慢来，再试一次就好。';
-    el('btnRetry').textContent = '再练一次';
+      ? 'You have the hang of turning, climbing and the 1-dot standard. Tutorial runs do not issue coupons — go fly a real approach.'
+      : 'You drifted past 1 dot. Come back to centre, take it slow, and try again.';
+    el('btnRetry').textContent = 'PRACTICE AGAIN';
   } else {
   el('rEyebrow').textContent = st.endOK ? 'APPROACH COMPLETE · RWY 18 · LANDED' : 'APPROACH TERMINATED · GO AROUND';
   el('rVerdict').textContent = st.endOK ? 'PERFECT LANDING!' : 'UNSTABLE APPROACH!';
@@ -1021,14 +1021,14 @@ function finish(){
      : st.failMsg === 'loc' ? 'Santa drifted off the centreline below 500 ft. Try again.'
      : st.failMsg === 'gs'  ? 'Santa lost the glide path below 500 ft. Try again.'
      : 'Santa, you missed the landing! Try again.');
-    el('btnRetry').textContent = '再飞一次';
+    el('btnRetry').textContent = 'FLY AGAIN';
   }
 
   if (st.tutorial){
     /* 教程局只是练习，不产生优惠券 */
     el('rLab').textContent = 'PRACTICE RUN';
     el('rTotal').textContent = '—';
-    el('rNote').textContent = '教程局不记录积分';
+    el('rNote').textContent = 'Tutorial runs do not record points';
     const vc2 = el('rVoucher');
     if (vc2) vc2.classList.remove('on');
     el('rCoupons').innerHTML = '';
@@ -1044,14 +1044,14 @@ function finish(){
       vc.classList.add('on');
       vc.classList.toggle('gold', dsc >= 10);
       el('rVoff').textContent = dsc + '% OFF';
-      el('rVsub').textContent = '积分 ' + kept + ' 兑换';
+      el('rVsub').textContent = kept + ' pts';
     } else {
       vc.classList.remove('on');
     }
   }
   el('rNote').textContent = st.endOK
-    ? (dsc > 0 ? '已达到 ' + dsc + '% 折扣档' : '未达 300 分 — 本局没有折扣')
-    : '进近失败 — 积分按 ' + Math.round(CFG.failKeep*100) + '% 折算';
+    ? (dsc > 0 ? dsc + '% discount unlocked' : 'Under 300 points — no discount this run')
+    : 'Approach failed — points reduced to ' + Math.round(CFG.failKeep*100) + '%';
 
   const box = el('rCoupons');
   box.innerHTML = '';
@@ -1078,10 +1078,10 @@ function finish(){
     try { locked = localStorage.getItem('cs_coupon_locked') === '1'; } catch (e){}
     if (locked){
       sb.disabled = true;
-      sb.textContent = '优惠券已保存，无法更改';
+      sb.textContent = 'COUPON ALREADY SAVED';
     } else {
       sb.disabled = false;
-      sb.textContent = '保存优惠券到我的账号';
+      sb.textContent = 'SAVE COUPON TO MY ACCOUNT';
     }
   }
 
@@ -2440,7 +2440,7 @@ function syncHUD(force){
     const show = alertOn && (locOver || gsOver) && !failFlash;
     if (show !== st._warnOn){ st._warnOn = show; warn.classList.toggle('on', show); }
     if (show){
-      const msg = (locOver && gsOver) ? 'LOC / GS 偏离' : (locOver ? 'LOC 偏离' : 'GS 偏离');
+      const msg = (locOver && gsOver) ? 'LOC / GS DEVIATION' : (locOver ? 'LOC DEVIATION' : 'GS DEVIATION');
       if (warn.textContent !== msg) warn.textContent = msg;
     }
   }
@@ -2616,12 +2616,12 @@ function markCouponSaved(id){
 
 async function handleSaveCoupon(){
   if (st.tutorial){
-    showToast('教程局不发放优惠券', '', 2.2);
+    showToast('Tutorial runs do not issue coupons', '', 2.2);
     return;
   }
 
   if (couponAlreadySaved(st.sessionId)){
-    showToast('这一局已经保存过了', '', 2.4);
+    showToast('This run has already been saved', '', 2.4);
     return;
   }
 
@@ -2629,34 +2629,34 @@ async function handleSaveCoupon(){
   const fn = couponBridge;
 
   if (typeof fn !== 'function'){
-    console.warn('[CS Coupon] 未接入保存功能。payload =', payload);
-    showToast('保存功能尚未接入', '', 2.6);
+    console.warn('[CS Coupon] No save handler registered. payload =', payload);
+    showToast('Saving is not connected yet', '', 2.6);
     return;
   }
 
   const btn = el('btnSave');
   btn.disabled = true;
-  btn.textContent = '保存中…';
+  btn.textContent = 'SAVING…';
 
   try {
     await fn(payload);
     markCouponSaved(st.sessionId);
     couponLock();
-    btn.textContent = '已保存 ✓';
+    btn.textContent = 'SAVED ✓';
     btn.disabled = true;
-    showToast('优惠券已保存到你的账号', 'green', 2.6);
+    showToast('Coupon saved to your account', 'green', 2.6);
   } catch (err){
-    console.error('[CS Coupon] 保存失败', err);
+    console.error('[CS Coupon] Save failed', err);
     btn.disabled = false;
-    btn.textContent = '保存优惠券到我的账号';
-    showToast('保存失败，请稍后重试', 'red', 2.6);
+    btn.textContent = 'SAVE COUPON TO MY ACCOUNT';
+    showToast('Save failed — please try again', 'red', 2.6);
   }
 }
 
 el('btnSave').addEventListener('click', e => {
   e.stopPropagation();
   if (couponLocked()){
-    showToast('优惠券已保存，无法更改', '', 2.6);
+    showToast('Coupon already saved', '', 2.6);
     return;
   }
   const kept = st.endOK ? st.points : Math.floor((st.points * CFG.failKeep) / 5) * 5;
@@ -2667,7 +2667,7 @@ el('btnSave').addEventListener('click', e => {
       sVc.style.display = '';
       sVc.classList.toggle('gold', sd >= 10);
       sVoff.textContent = sd + '% OFF';
-      sVsub.textContent = '积分 ' + kept + ' 兑换';
+      sVsub.textContent = kept + ' pts';
     } else {
       sVc.style.display = 'none';
     }
@@ -2719,7 +2719,7 @@ requestAnimationFrame(loop);
   if (q.has('fw')){ firework(W * 0.62, 130, 1); }
   if (q.has('savebox')){
     if (el('scVoff')) el('scVoff').textContent = '7% OFF';
-    if (el('scVsub')) el('scVsub').textContent = '积分 720 兑换';
+    if (el('scVsub')) el('scVsub').textContent = '720 pts';
     el('saveBox').classList.add('on');
   }
   if (q.get('alt')) st.h = parseFloat(q.get('alt'));
