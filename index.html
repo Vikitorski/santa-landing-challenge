@@ -660,6 +660,8 @@ const st = {
   vy        : 0,
   time      : 0,
   coupons   : [],
+  giftSeq   : 0,           // 本局礼物递增序号
+  giftLog   : [],          // 撞到的礼物明细（供后端审计 / 去重）
   points    : 0,
   hits      : 0,
   misses    : 0,
@@ -944,7 +946,7 @@ function startGame(tutorial){
     tutorial: isTut, tutIdx: 0, tutFlashAll: false, failFlash: null,
     sessionId: 'cs-' + Date.now().toString(36) + '-' + Math.random().toString(36).slice(2, 10),
     startedAt: Date.now(),
-    time:0, coupons:[], points:0, hits:0, misses:0,
+    time:0, coupons:[], giftSeq:0, giftLog:[], points:0, hits:0, misses:0,
     gifts:[], parts:[], pops:[], bank:0, pitch:0,
     camX:0, camY:0, shake:0, nextGift:1.6,
     checkOn:false, grace:0, failed:false, failMsg:'',
@@ -1302,7 +1304,11 @@ function update(dt){
 function spawnGift(){
   const Z = zp();
   const isBalloon = Math.random() < 0.28;
+  /* 局内递增序号 + sessionId 前缀 = 全局唯一 ID，后端可直接拿它做去重键 */
+  const seq = ++st.giftSeq;
   const g = {
+    id:   st.sessionId + '-G' + seq,
+    seq:  seq,
     x: rand(-145, 145),
     y: rand(-30, 30),
     z: Z - rand(760, 1150),
@@ -1313,6 +1319,8 @@ function spawnGift(){
     anim: 0,
     spin: rand(0, 6.283),
     bob: rand(0, 6.283),
+    bornMs: Date.now() - st.startedAt,
+    bornAlt: Math.round(st.h),
   };
   st.gifts.push(g);
 }
@@ -1340,6 +1348,21 @@ function collectGift(g, sx, sy){
     }
   }
   if (gained > 0) st.coupons.push(gained);
+
+  /* 审计明细：每个礼物只记一次（g.done 在上面已挡住重复） */
+  st.giftLog.push({
+    id:       g.id,
+    seq:      g.seq,
+    type:     g.type,
+    hue:      g.hue,
+    value:    g.value,        // 面额
+    gained:   gained,         // 实际到账（封顶后为 0）
+    credited: gained > 0,
+    atMs:     Date.now() - st.startedAt,
+    altFt:    Math.round(st.h),
+    bornMs:   g.bornMs,
+    bornAlt:  g.bornAlt
+  });
 
   const col = HUES[g.hue % HUES.length];
   burst(sx, sy, col, 16, 260);
@@ -2538,6 +2561,15 @@ el('btnTutorial').addEventListener('click', e => { e.stopPropagation(); startGam
      misses:     49,
      maxDev:     0.11,           // 判定窗口内最大偏差（点）
      tutorial:   false,
+     gifts: {                       // 新增：礼物审计
+       generated: 98,              // 本局生成总数
+       collected: [                // 撞到的每一个，id 全局唯一
+         { id: "cs-...-G7", seq: 7, type: "box", hue: 2,
+           value: 80, gained: 80, credited: true,
+           atMs: 12480, altFt: 1650, bornMs: 6200, bornAlt: 1980 }
+       ],
+       count: 18
+     },
 
      sessionId:  "cs-m3k9x2-a7f2b1",     // 本局唯一 id
      startedAt:  "2026-11-02T01:28:00Z",
@@ -2576,13 +2608,20 @@ function buildCouponPayload(){
     misses:     st.misses,
     maxDev:     +st.maxDev.toFixed(2),
     tutorial:   !!st.tutorial,
+
+    /* 礼物明细：generated 为生成总数，collected 为撞到的每一个礼物 */
+    gifts: {
+      generated: st.giftSeq,
+      collected: st.giftLog.slice(),
+      count:     st.giftLog.length
+    },
     /* —— 以下四项给后端判断"是不是真玩过这一局" —— */
     sessionId:  st.sessionId,
     startedAt:  new Date(st.startedAt).toISOString(),
     durationMs: Date.now() - st.startedAt,           // 正常一局 60~80 秒，明显偏短就是脚本
     frames:     Math.round(st.time * 60),
     issuedAt:   new Date().toISOString(),
-    version:    '1.1'
+    version:    '1.2'
   };
 }
 
