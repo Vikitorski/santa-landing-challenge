@@ -225,7 +225,33 @@
   h1{font-size:clamp(23px,4.6vw,33px);line-height:1.12;letter-spacing:-.015em;font-weight:700;
     background:linear-gradient(180deg,#fff,#9dc4ee);-webkit-background-clip:text;background-clip:text;
     -webkit-text-fill-color:transparent;margin-bottom:6px}
-  .sub{font-size:12.5px;color:var(--dim);letter-spacing:.04em;margin-bottom:26px;line-height:1.6}
+  .sub{font-size:12.5px;color:var(--dim);letter-spacing:.04em;margin-bottom:22px;line-height:1.6}
+
+  /* 奖励 + 判定卡片 */
+  .rewardcard{margin:0 0 20px;padding:13px 14px 12px;border-radius:11px;
+    border:1px solid rgba(120,170,220,.26);background:rgba(9,16,28,.7);text-align:center}
+  .rc-cap{font-family:var(--mono);font-size:8.5px;letter-spacing:.22em;color:var(--dim)}
+  .rc-main{font-family:var(--mono);font-size:19px;font-weight:700;letter-spacing:.02em;
+    color:#ffd166;margin-top:5px;text-shadow:0 0 18px rgba(255,209,102,.35)}
+  .rc-tiers{font-size:10.5px;color:var(--dim);margin-top:5px;letter-spacing:.02em}
+  .rc-tear{display:flex;align-items:center;gap:7px;margin:11px 0 9px}
+  .rc-tear::before,.rc-tear::after{content:'';flex:1;height:1px;background:rgba(120,170,220,.22)}
+  .rc-tear i{width:7px;height:7px;border-radius:50%;flex:0 0 7px;
+    border:1px solid rgba(120,170,220,.38);background:#050a12}
+  .rc-ils{position:relative;height:30px;margin:9px 4px 2px}
+  .rc-ils::before{content:'';position:absolute;left:0;right:0;top:50%;height:1px;
+    background:rgba(120,170,220,.3)}
+  .rc-tick{position:absolute;top:50%;width:5px;height:5px;border-radius:50%;
+    background:rgba(215,235,255,.85);transform:translate(-50%,-50%)}
+  .rc-tick.ref{width:9px;height:9px;border-radius:0;background:transparent;
+    border:1.5px solid #eaf4ff;transform:translate(-50%,-50%) rotate(45deg);
+    box-shadow:0 0 7px rgba(234,244,255,.5)}
+  .rc-band{position:absolute;left:28%;right:28%;top:3px;bottom:3px;
+    border:1px dashed rgba(60,230,168,.5);border-radius:3px}
+  .rc-dia{position:absolute;left:50%;top:50%;width:11px;height:11px;
+    margin:-5.5px 0 0 -5.5px;background:#ff3ea5;border-radius:1px;
+    transform:rotate(45deg);box-shadow:0 0 12px rgba(255,62,165,.6)}
+  .rc-note{font-size:10.5px;color:var(--dim);margin-top:6px;letter-spacing:.02em}
 
   .rules{text-align:left;display:flex;flex-direction:column;gap:13px;margin-bottom:28px}
   .rule{display:flex;gap:12px;align-items:flex-start}
@@ -339,7 +365,10 @@
     #hint span{font-size:9px;letter-spacing:.14em}
     #toast{font-size:10.5px;letter-spacing:.18em;top:22%}    .pop{font-size:12px}
     .card{padding:24px 18px 20px}
-    .rules{gap:10px;margin-bottom:20px}
+    .rules{gap:10px;margin-bottom:18px}
+    .rewardcard{padding:11px 11px 10px;margin-bottom:16px}
+    .rc-main{font-size:17px}
+    .rc-ils{height:26px;margin:7px 2px 1px}
     .rule .tx{font-size:11.5px;line-height:1.55}
     .totalwrap .amt{font-size:34px}
   }
@@ -442,12 +471,30 @@
     <h1>Santa Claus<br>Landing Challenge</h1>
     <div class="sub">Silent Night Approach · Instrument Approach<br>Catch gifts, hold the glideslope, land safely — and earn your Christmas discount</div>
 
+    <div class="rewardcard">
+      <div class="rc-cap">REWARD</div>
+      <div class="rc-main">UP TO 10% OFF</div>
+      <div class="rc-tiers">300→3% · 500→5% · 700→7% · 1000→10%</div>
+      <div class="rc-tear"><i></i></div>
+      <div class="rc-cap">ILS APPROACH LIMIT</div>
+      <div class="rc-ils">
+        <i class="rc-tick" style="left:6%"></i>
+        <i class="rc-tick" style="left:28%"></i>
+        <i class="rc-tick ref" style="left:50%"></i>
+        <i class="rc-tick" style="left:72%"></i>
+        <i class="rc-tick" style="left:94%"></i>
+        <span class="rc-band"></span>
+        <b class="rc-dia"></b>
+      </div>
+      <div class="rc-note">below 500 ft · stay within 1 dot</div>
+    </div>
+
     <div class="rules">
-      <div class="rule"><span class="n">1</span><div class="tx"><b>Catch gifts.</b> Fly through the gift boxes and balloons in the storm. Each one scores <b>25–150 points</b> — the more you catch, the more you earn.</div></div>
-      <div class="rule"><span class="n">2</span><div class="tx"><b>Capture the approach.</b> When the gifts stop, use the <b>G/S</b> pointer on the right and the <b>LOC</b> pointer below to bring the magenta diamonds back to centre, aiming at the big white blocks on the runway. The PAPI on the left turns white when you are high, red when low.</div></div>
-      <div class="rule"><span class="n">3</span><div class="tx"><b>The 500 ft gate.</b> Below <b>500 FT</b> the approach is judged strictly — drift more than <b>1 dot</b> on either pointer and it counts as unstable. Hold it together down to <b>100 FT</b>: as long as you touch down on the runway surface, you have landed.</div></div>
-      <div class="rule"><span class="n">4</span><div class="tx"><b>Results.</b> A successful landing keeps all your points; a failed approach keeps <b>50%</b>. <b>300 / 500 / 700 / 1000 points</b> unlock <b>3% / 5% / 7% / 10%</b> off. If the approach fails, your total is halved first — the discount tier is based on that <b>final total</b>.</div></div>
-      <div class="rule touchonly"><span class="n">5</span><div class="tx"><b>Touch controls.</b> Drag on the screen to steer: left and right to turn, up and down to climb or descend. Release to level off.</div></div>
+      <div class="rule"><span class="n">1</span><div class="tx"><b>Catch gifts</b> — fly through them, <b>25–150 pts</b> each.</div></div>
+      <div class="rule"><span class="n">2</span><div class="tx"><b>Line up</b> — when gifts stop, bring the <b>G/S</b> (right) and <b>LOC</b> (below) diamonds to centre, aiming at the white blocks.</div></div>
+      <div class="rule"><span class="n">3</span><div class="tx"><b>Stabilize approach</b> — below <b>500 FT</b> keep <b>both</b> pointers within <b>1 dot</b>. Past <b>100 FT</b>, just land on the runway.</div></div>
+      <div class="rule"><span class="n">4</span><div class="tx"><b>Results</b> — landing keeps all points; a failed approach halves them first, then the tier counts.</div></div>
+      <div class="rule touchonly"><span class="n">5</span><div class="tx"><b>Touch</b> — drag to steer; <b>down climbs</b>, up descends.</div></div>
     </div>
 
     <button class="btn" id="btnStart">START APPROACH &nbsp;›</button>
