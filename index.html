@@ -45,6 +45,8 @@
   .stat .v.amber{color:var(--amber);text-shadow:0 0 18px rgba(255,196,94,.45)}
   .stat .v.sm{font-size:13px;letter-spacing:.12em;padding-top:4px;color:var(--ice)}
   .stat .v.sm.warn{color:var(--red)}
+  .stat .v.sm.counting{font-size:11px;letter-spacing:.05em;white-space:nowrap}
+  .stat .v.sm.soon{color:var(--amber);text-shadow:0 0 14px rgba(255,196,94,.5)}
   .stat .v.sm i{font-style:normal;color:var(--ice);margin-right:3px;font-size:12px}
   .stat .v.sm b{font-weight:600;color:var(--ice);font-size:14px}
   .stat .v.sm u{text-decoration:none;font-size:8.5px;color:var(--dim);margin-left:2px;letter-spacing:.08em}
@@ -176,9 +178,14 @@
     display:none;z-index:39;white-space:nowrap;
     box-shadow:0 14px 34px -12px rgba(214,38,58,.85)}
   #devWarn.on{display:block;animation:warnPulse 1s ease-in-out infinite}
+  #devWarn.urgent{background:rgba(176,20,40,.97);
+    box-shadow:0 0 0 1px rgba(255,140,150,.7),0 14px 34px -12px rgba(214,38,58,.95)}
+  #devWarn.urgent.on{animation:warnPulse .45s ease-in-out infinite}
   @keyframes warnPulse{0%,100%{opacity:1}50%{opacity:.6}}
   @media(max-width:620px){
     #devWarn{top:24%;font-size:13px;padding:8px 16px}
+    .stat .v.sm.counting{font-size:9.5px;letter-spacing:0}
+    #devWarn.urgent{font-size:11px;letter-spacing:.04em}
   }
 
   /* ---------- 教程引导 ---------- */
@@ -1271,7 +1278,7 @@ function update(dt){
       flashILS(false);   /* 判定一开始就停闪，别干扰读指针 */
       st.grace = CFG.graceT;
       if (!st.beeped){ st.beeped = true; sfx.warn(); }
-      showToast('500 FT · STABLE APPROACH CHECK', '', 1.6);
+      showToast('500 FT · STAY WITHIN 1 DOT', '', 1.6);
     }
     if (st.checkOn && st.h > CFG.cutoffAlt){
       if (st.grace > 0){
@@ -2429,7 +2436,11 @@ function syncHUD(force){
 
   const phase = el('hPhase');
   if (st.h > 800){ phase.textContent = 'COLLECT'; phase.className = 'v sm'; }
-  else if (st.h > CFG.checkAlt){ phase.textContent = 'CAPTURE'; phase.className = 'v sm'; }
+  else if (st.h > CFG.checkAlt){
+    const left = Math.max(0, Math.round(st.h - CFG.checkAlt));
+    phase.textContent = 'STABILIZE IN ' + left + ' FT';
+    phase.className = 'v sm counting' + (left <= 200 ? ' soon' : '');
+  }
   else { phase.textContent = 'STABLE CHK'; phase.className = 'v sm warn'; }
 
   /* --- G/S 指针 --- */
@@ -2464,7 +2475,10 @@ function syncHUD(force){
   const locBand = el('locBand');
   locBand.style.left = (locW / 2 - locDotPx) + 'px';
   locBand.style.width = (locDotPx * 2) + 'px';
-  locBand.style.borderColor = st.checkOn ? 'rgba(60,230,168,.45)' : 'rgba(60,230,168,.22)';
+  /* 判定开始前 500ft 就把允许区间强调出来，让玩家先看见"1 个点的框" */
+  const gateNear = st.h <= 1000;
+  gsBand.style.borderColor  = gateNear ? 'rgba(60,230,168,.62)' : 'rgba(60,230,168,.22)';
+  locBand.style.borderColor = gateNear ? 'rgba(60,230,168,.62)' : 'rgba(60,230,168,.22)';
 
   /* --- 偏离提醒：1000ft 以下、100ft 以上才提示；失败后出问题的指针一直闪 --- */
   const alertOn = st.mode === 'play' && st.h <= 1000 && st.h > CFG.cutoffAlt;
@@ -2482,8 +2496,12 @@ function syncHUD(force){
     const show = alertOn && (locOver || gsOver) && !failFlash;
     if (show !== st._warnOn){ st._warnOn = show; warn.classList.toggle('on', show); }
     if (show){
-      const msg = (locOver && gsOver) ? 'LOC / GS DEVIATION' : (locOver ? 'LOC DEVIATION' : 'GS DEVIATION');
+      const who = (locOver && gsOver) ? 'LOC / GS' : (locOver ? 'LOC' : 'GS');
+      /* 越接近 1 dot 越要把后果说清楚，但始终点名是哪个指针偏了 */
+      const hard = Math.max(Math.abs(locDot), Math.abs(gsDot)) > 0.75;
+      const msg = hard ? who + ' DEVIATION · 1 DOT LIMIT' : who + ' DEVIATION';
       if (warn.textContent !== msg) warn.textContent = msg;
+      warn.classList.toggle('urgent', hard);
     }
   }
 }
