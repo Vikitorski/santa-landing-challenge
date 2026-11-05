@@ -439,7 +439,7 @@
       <div class="rule"><span class="n">1</span><div class="tx"><b>Catch gifts.</b> Fly through the gift boxes and balloons in the storm. Each one scores <b>25–150 points</b> — the more you catch, the more you earn.</div></div>
       <div class="rule"><span class="n">2</span><div class="tx"><b>Capture the approach.</b> When the gifts stop, use the <b>G/S</b> pointer on the right and the <b>LOC</b> pointer below to bring the magenta diamonds back to centre, aiming at the big white blocks on the runway. The PAPI on the left turns white when you are high, red when low.</div></div>
       <div class="rule"><span class="n">3</span><div class="tx"><b>The 500 ft gate.</b> Below <b>500 FT</b> the approach is judged strictly — drift more than <b>1 dot</b> on either pointer and it counts as unstable. Hold it together down to <b>100 FT</b>: as long as you touch down on the runway surface, you have landed.</div></div>
-      <div class="rule"><span class="n">4</span><div class="tx"><b>Results.</b> A successful landing keeps all your points; a failed approach keeps <b>50%</b>. <b>300 / 500 / 700 / 1000 points</b> unlock <b>3% / 5% / 7% / 10%</b> off.</div></div>
+      <div class="rule"><span class="n">4</span><div class="tx"><b>Results.</b> A successful landing keeps all your points; a failed approach keeps <b>50%</b>. <b>300 / 500 / 700 / 1000 points</b> unlock <b>3% / 5% / 7% / 10%</b> off. If the approach fails, your total is halved first — the discount tier is based on that <b>final total</b>.</div></div>
       <div class="rule touchonly"><span class="n">5</span><div class="tx"><b>Touch controls.</b> Drag on the screen to steer: left and right to turn, up and down to climb or descend. Release to level off.</div></div>
     </div>
 
@@ -634,6 +634,12 @@ function discountOf(p){
   let d = 0;
   for (const t of CFG.tiers) if (p >= t.at) d = t.off;
   return d;
+}
+
+/* 最终可发放积分：折算只在这里做一次，取整到个位。
+   结算页、保存弹窗、payload 全部调用它，口径统一。 */
+function finalPoints(){
+  return st.endOK ? st.points : Math.floor(st.points * CFG.failKeep);
 }
 
 function rollPoints(){
@@ -1006,7 +1012,7 @@ function finish(){
   el('result').classList.add('on');
 
   const raw = st.points;
-  const kept = st.endOK ? raw : Math.floor((raw * CFG.failKeep) / 5) * 5;
+  const kept = finalPoints();
 
   if (st.tutorial){
     hideTutor();
@@ -1057,7 +1063,7 @@ function finish(){
   }
   el('rNote').textContent = st.endOK
     ? (dsc > 0 ? dsc + '% discount unlocked' : 'Under 300 points — no discount this run')
-    : 'Approach failed — points reduced to ' + Math.round(CFG.failKeep*100) + '%';
+    : 'Approach failed — final total halved and rounded down';
 
   const box = el('rCoupons');
   box.innerHTML = '';
@@ -1085,6 +1091,10 @@ function finish(){
     if (locked){
       sb.disabled = true;
       sb.textContent = 'COUPON ALREADY SAVED';
+    } else if (discountOf(kept) === 0){
+      /* 一张券都还没有，不能保存，更不能把全局锁写死 */
+      sb.disabled = true;
+      sb.textContent = 'EARN ' + (CFG.tiers[0].at - kept) + ' MORE PTS TO UNLOCK';
     } else {
       sb.disabled = false;
       sb.textContent = 'SAVE COUPON TO MY ACCOUNT';
@@ -2554,7 +2564,8 @@ el('btnTutorial').addEventListener('click', e => { e.stopPropagation(); startGam
    ── payload 结构 ──────────────────────────────────────────────────────
    {
      ok:         true | false,   // 是否成功着陆（失败局按 50% 折算）
-     coupons:    [60, 40, 25],   // 每个礼物实际到账的积分
+     coupons:    [150, 100, 80], // 每个礼物原始到账积分，合计 = rawTotal
+                              // 失败局不逐项折算，以 total 为准
      total:      125,            // 合计，和结算页显示一致
      rawTotal:   250,            // 折算前
      hits:       13,
@@ -2593,11 +2604,10 @@ el('btnTutorial').addEventListener('click', e => { e.stopPropagation(); startGam
 
 function buildCouponPayload(){
   const raw = st.points;
-  const list = st.coupons.slice().sort((a, b) => b - a);
-  const coupons = st.endOK
-    ? list
-    : list.map(v => Math.floor((v * CFG.failKeep) / 5) * 5).filter(v => v > 0);
-  const total = st.endOK ? raw : Math.floor((raw * CFG.failKeep) / 5) * 5;
+  /* 明细保留每个礼物的原始到账积分，合计等于 rawTotal；
+     最终发放积分只看 total，折算不在明细上重复做。 */
+  const coupons = st.coupons.slice().sort((a, b) => b - a);
+  const total = finalPoints();
 
   return {
     ok:         !!st.endOK,
@@ -2672,6 +2682,10 @@ async function handleSaveCoupon(){
     showToast('This run has already been saved', '', 2.4);
     return;
   }
+  if (discountOf(finalPoints()) === 0){
+    showToast('Earn at least 300 points to unlock a discount', '', 2.6);
+    return;
+  }
 
   const payload = buildCouponPayload();
   const fn = couponBridge;
@@ -2707,7 +2721,11 @@ el('btnSave').addEventListener('click', e => {
     showToast('Coupon already saved', '', 2.6);
     return;
   }
-  const kept = st.endOK ? st.points : Math.floor((st.points * CFG.failKeep) / 5) * 5;
+  const kept = finalPoints();
+  if (discountOf(kept) === 0){
+    showToast('Earn at least 300 points to unlock a discount', '', 2.6);
+    return;
+  }
   const sVc = el('scVoucher'), sVoff = el('scVoff'), sVsub = el('scVsub');
   if (sVc && sVoff){
     const sd = discountOf(kept);
